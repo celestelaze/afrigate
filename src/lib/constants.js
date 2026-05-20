@@ -9,9 +9,8 @@ export const COUNTRIES = [
 
 export const MOROCCO = { code: 'MA', name: 'Maroc', flag: '🇲🇦', currency: 'MAD', dialCode: '+212' }
 
-// 1 MAD = X FCFA
-export const RATE_MAD_TO_FCFA = 57   // Maroc → Afrique
-export const RATE_FCFA_TO_MAD = 63   // Afrique → Maroc (1 MAD = 63 FCFA)
+export const RATE_MAD_TO_FCFA = 57
+export const RATE_FCFA_TO_MAD = 63
 export const FEES_PERCENT = 0.10
 
 export const AFRICA_SEND_METHODS = [
@@ -19,14 +18,14 @@ export const AFRICA_SEND_METHODS = [
     id: 'orange_money',
     name: 'Orange Money',
     desc: 'Mobile Money',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Orange_Money_logo.svg/320px-Orange_Money_logo.svg.png',
+    logo: '/logos/orangemoney.jpeg',
     color: '#FF7900',
   },
   {
     id: 'wave',
     name: 'Wave',
     desc: 'Mobile Money',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Wave_money_logo.svg/320px-Wave_money_logo.svg.png',
+    logo: '/logos/wave.png',
     color: '#1DC8EE',
   },
 ]
@@ -36,37 +35,45 @@ export const MOROCCO_RECEIVE_METHODS = [
     id: 'cih',
     name: 'CIH Bank',
     desc: 'Virement bancaire',
-    logo: 'https://upload.wikimedia.org/wikipedia/fr/thumb/7/79/CIH_Bank_logo.svg/320px-CIH_Bank_logo.svg.png',
+    logo: '/logos/cihbank.jpeg',
     color: '#E30613',
   },
   {
     id: 'boa',
     name: 'Bank of Africa',
     desc: 'Virement bancaire',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Bank_of_Africa_logo.svg/320px-Bank_of_Africa_logo.svg.png',
-    color: '#005BAA',
+    logo: '/logos/bankofafrica.png',
+    color: '#1B4F9F',
   },
   {
     id: 'cashplus',
     name: 'Cash Plus',
     desc: 'Retrait en agence',
-    logo: 'https://www.cashplus.ma/images/logo-cashplus.png',
-    color: '#009246',
+    logo: '/logos/cashplus.webp',
+    color: '#00A99D',
   },
   {
     id: 'wafacash',
     name: 'Wafa Cash',
     desc: 'Retrait en agence',
-    logo: 'https://www.wafacash.com/images/logo-wafacash.png',
-    color: '#C8102E',
+    logo: '/logos/wafacash.png',
+    color: '#F5C400',
   },
 ]
 
 export const MOROCCO_SEND_METHODS = MOROCCO_RECEIVE_METHODS
-
 export const AFRICA_RECEIVE_METHODS = AFRICA_SEND_METHODS
 
 export const WHATSAPP_NUMBER = '221776997546'
+export const CONTACT_PHONE = '+221 77 699 75 46'
+export const CONTACT_EMAIL = 'support@afrigate.com'
+
+export const SOCIAL_LINKS = {
+  facebook: 'https://facebook.com/afrigate',
+  instagram: 'https://instagram.com/afrigate_transfert',
+  tiktok: 'https://www.tiktok.com/@afrigate_transfert?_r=1&_t=ZS-96WbVH8fpau',
+  whatsapp: 'https://wa.me/221776997546',
+}
 
 export const TESTIMONIALS = [
   { name: 'Fatima B.', country: 'Maroc', flag: '🇲🇦', stars: 5, text: "AfriGate m'a permis d'envoyer de l'argent à ma famille en Côte d'Ivoire en moins d'une heure. Je recommande les yeux fermés !", initials: 'FB' },
@@ -75,4 +82,13 @@ export const TESTIMONIALS = [
   { name: 'Youssef M.', country: 'Maroc', flag: '🇲🇦', stars: 5, text: "Enfin un service qui inspire vraiment confiance. J'utilise AfriGate chaque mois sans aucun problème.", initials: 'YM' },
   { name: 'Ibrahim S.', country: 'Mali', flag: '🇲🇱', stars: 5, text: "Simple, rapide, efficace. Je n'utilise plus rien d'autre pour mes envois. Merci AfriGate !", initials: 'IS' },
   { name: 'Mariama C.', country: 'Burkina Faso', flag: '🇧🇫', stars: 5, text: "Le calcul automatique des frais m'a vraiment surprise. Interface magnifique et très pratique.", initials: 'MC' },
+]
+
+export const ALL_PARTNERS = [
+  { name: 'Orange Money', logo: '/logos/orangemoney.jpeg', bg: 'white' },
+  { name: 'Wave',         logo: '/logos/wave.png',        bg: '#1DC8EE' },
+  { name: 'CIH Bank',    logo: '/logos/cihbank.jpeg',     bg: 'white' },
+  { name: 'Bank of Africa', logo: '/logos/bankofafrica.png', bg: '#1B4F9F' },
+  { name: 'Cash Plus',   logo: '/logos/cashplus.webp',    bg: 'white' },
+  { name: 'Wafa Cash',   logo: '/logos/wafacash.png',     bg: 'white' },
 ]

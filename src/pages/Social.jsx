@@ -30,7 +30,7 @@ const SOCIALS = [
     name: 'TikTok',
     handle: '@afrigate',
     desc: 'Vidéos courtes : taux du jour, astuces, témoignages',
-    href: 'https://tiktok.com/@afrigate',
+    href: 'https://www.tiktok.com/@afrigate_transfert?_r=1&_t=ZS-96WbVH8fpau',
     bg: '#010101',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
