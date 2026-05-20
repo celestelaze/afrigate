@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+*.log
+-e 
+# Scripts with tokens
+setup.sh
+deploy.sh
+.env
