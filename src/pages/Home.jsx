@@ -271,14 +271,14 @@ function QuickSimulator() {
             <span className="text-blue-200 text-sm">Total à payer</span>
             <span className="text-white font-bold">{total.toLocaleString()} {isMad ? 'MAD' : 'FCFA'}</span>
           </div>
-          <div className="flex justify-between pt-3 border-t border-white/10">
-            <span className="text-white font-bold text-sm">Le bénéficiaire reçoit</span>
-            <div className="text-right">
-              <span className="text-gold-DEFAULT font-extrabold text-3xl">
-                {received.toLocaleString()} {isMad ? 'FCFA' : 'MAD'}
-              </span>
-
-            </div>
+          <div className="pt-3 border-t border-white/10 text-center">
+            <span className="text-blue-200 text-xs uppercase tracking-widest font-semibold block mb-2">Le bénéficiaire reçoit</span>
+            <span className="text-gold-DEFAULT font-extrabold text-4xl block leading-tight">
+              {received.toLocaleString()}
+            </span>
+            <span className="text-gold-DEFAULT font-bold text-xl block mt-1">
+              {isMad ? 'FCFA' : 'MAD'}
+            </span>
           </div>
         </div>
       )}

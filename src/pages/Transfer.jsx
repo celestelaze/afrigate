@@ -363,10 +363,9 @@ function MethodSelect({ label, options, value, onChange }) {
             className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${
               value?.id === m.id ? 'border-gold-DEFAULT bg-gold-DEFAULT/5' : 'border-gray-200 hover:border-gray-300'
             }`}>
-            {/* Logo fallback with colored badge */}
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-white text-xs text-center leading-tight"
-              style={{ backgroundColor: m.color }}>
-              {m.name.split(' ')[0]}
+            {/* Real logo image */}
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border border-gray-100 shadow-sm p-1">
+              <img src={m.logo} alt={m.name} className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="font-bold text-navy">{m.name}</div>
