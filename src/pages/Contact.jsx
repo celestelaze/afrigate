@@ -69,7 +69,7 @@ export default function Contact() {
           {/* Info */}
           <div className="space-y-6">
             {[
-              { icon: Mail, title: 'Email', content: 'support@afrigate.com', href: 'mailto:support@afrigate.com', color: 'bg-blue-50', ic: 'text-blue-500' },
+              { icon: Mail, title: 'Email', content: 'afrigate@zohomail.com', href: 'mailto:afrigate@zohomail.com', color: 'bg-blue-50', ic: 'text-blue-500' },
               { icon: Phone, title: 'Téléphone', content: '+221 77 699 75 46', href: 'tel:+221776997546', color: 'bg-green-50', ic: 'text-green-500' },
               { icon: Clock, title: 'Horaires', content: 'Lundi – Dimanche, 24h/24, 7j/7', href: null, color: 'bg-gold-DEFAULT/10', ic: 'text-gold-DEFAULT' },
             ].map(({ icon: Icon, title, content, href, color, ic }) => (

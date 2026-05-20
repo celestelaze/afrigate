@@ -66,11 +66,11 @@ export const AFRICA_RECEIVE_METHODS = AFRICA_SEND_METHODS
 
 export const WHATSAPP_NUMBER = '221776997546'
 export const CONTACT_PHONE = '+221 77 699 75 46'
-export const CONTACT_EMAIL = 'support@afrigate.com'
+export const CONTACT_EMAIL = 'afrigate@zohomail.com'
 
 export const SOCIAL_LINKS = {
-  facebook: 'https://facebook.com/afrigate',
-  instagram: 'https://instagram.com/afrigate_transfert',
+  facebook: 'https://www.facebook.com/share/14d6oQuFg65/?mibextid=wwXIfr',
+  instagram: 'https://www.instagram.com/afrigate_transfert?igsh=ZmJmdWEyMjJjNmll&utm_source=qr',
   tiktok: 'https://www.tiktok.com/@afrigate_transfert?_r=1&_t=ZS-96WbVH8fpau',
   whatsapp: 'https://wa.me/221776997546',
 }
