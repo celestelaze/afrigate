@@ -237,7 +237,7 @@ Merci de prendre en charge ma demande. 🙏`
                     ['Montant envoyé', `${amt.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`, false],
                     ['Frais (10%)', `+ ${fees.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`, false],
                     ['Total à payer', `${total.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`, false],
-                    ['Bénéficiaire reçoit', `${received.toLocaleString()} ${isMad ? 'FCFA' : 'MAD'}`, true],
+                    ['Bénéficiaire reçoit', received > 0 ? received.toLocaleString('fr-FR') + ' ' + (isMad ? 'FCFA' : 'MAD') : '—', true],
                   ].map(([l, v, h]) => (
                     <div key={l} className={`flex justify-between ${h ? 'pt-2 border-t border-white/10' : ''}`}>
                       <span className={`text-sm ${h ? 'text-white font-bold' : 'text-blue-200'}`}>{l}</span>
