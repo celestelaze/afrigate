@@ -96,7 +96,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-blue-200">
-          <p>© 2025 AfriGate. Tous droits réservés.</p>
+          <p>© 2026 AfriGate. Tous droits réservés.</p>
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-400"></span>Transferts sécurisés</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gold-DEFAULT"></span>Données protégées</span>

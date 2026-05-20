@@ -236,15 +236,14 @@ function QuickSimulator() {
       {/* Direction toggle */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         {[
-          {val:'MAD_TO_FCFA', label:'🇲🇦 Maroc → Afrique', sub:'1 MAD = 57 FCFA'},
-          {val:'FCFA_TO_MAD', label:'🌍 Afrique → 🇲🇦 Maroc', sub:'1 MAD = 63 FCFA'},
+          {val:'MAD_TO_FCFA', label:'🇲🇦 Maroc → Afrique', sub:''},
+          {val:'FCFA_TO_MAD', label:'🌍 Afrique → 🇲🇦 Maroc', sub:''},
         ].map(d => (
           <button key={d.val} onClick={() => { setDir(d.val); setAmount('') }}
             className={`p-3 rounded-xl border-2 text-sm font-semibold transition-all text-center ${
               dir === d.val ? 'border-gold-DEFAULT bg-gold-DEFAULT/5 text-navy' : 'border-gray-200 text-gray-400 hover:border-gray-300'
             }`}>
             <div>{d.label}</div>
-            <div className={`text-xs mt-0.5 ${dir === d.val ? 'text-gold-dark' : 'text-gray-400'}`}>{d.sub}</div>
           </button>
         ))}
       </div>
@@ -275,14 +274,10 @@ function QuickSimulator() {
           <div className="flex justify-between pt-3 border-t border-white/10">
             <span className="text-white font-bold text-sm">Le bénéficiaire reçoit</span>
             <div className="text-right">
-              <span className="text-gold-DEFAULT font-extrabold text-xl">
+              <span className="text-gold-DEFAULT font-extrabold text-3xl">
                 {received.toLocaleString()} {isMad ? 'FCFA' : 'MAD'}
               </span>
-              <div className="text-blue-300 text-xs mt-0.5">
-                {isMad
-                  ? `(${num.toLocaleString()} MAD × ${rate} = ${received.toLocaleString()} FCFA)`
-                  : `(${num.toLocaleString()} FCFA ÷ ${rate} = ${received.toLocaleString()} MAD)`}
-              </div>
+
             </div>
           </div>
         </div>

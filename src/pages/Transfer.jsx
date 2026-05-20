@@ -141,8 +141,8 @@ Merci de prendre en charge ma demande. 🙏`
               <h2 className="font-display text-xl font-bold text-navy mb-6">Quelle est la direction du transfert ?</h2>
               <div className="grid gap-4">
                 {[
-                  { val: 'MAD_TO_FCFA', from: MOROCCO, to: null, label: 'Depuis le Maroc vers l\'Afrique', sub: '1 MAD = 57 FCFA' },
-                  { val: 'FCFA_TO_MAD', from: null, to: MOROCCO, label: 'Depuis l\'Afrique vers le Maroc', sub: '1 MAD = 63 FCFA' },
+                  { val: 'MAD_TO_FCFA', from: MOROCCO, to: null, label: 'Depuis le Maroc vers l\'Afrique', sub: '' },
+                  { val: 'FCFA_TO_MAD', from: null, to: MOROCCO, label: 'Depuis l\'Afrique vers le Maroc', sub: '' },
                 ].map(d => (
                   <button key={d.val} onClick={() => set('direction', d.val)}
                     className={`p-5 rounded-2xl border-2 text-left transition-all ${
@@ -154,7 +154,6 @@ Merci de prendre en charge ma demande. 🙏`
                       <span className="text-2xl">{d.val === 'MAD_TO_FCFA' ? '🌍' : '🇲🇦'}</span>
                     </div>
                     <div className="font-display font-bold text-navy">{d.label}</div>
-                    <div className="text-sm text-gold-dark font-medium mt-0.5">{d.sub}</div>
                   </button>
                 ))}
               </div>
