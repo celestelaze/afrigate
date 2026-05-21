@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { AuthProvider } from './components/AuthContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -36,6 +37,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Layout />
+        <SpeedInsights />
       </AuthProvider>
     </BrowserRouter>
   )
