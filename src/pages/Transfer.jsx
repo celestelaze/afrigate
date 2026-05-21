@@ -233,17 +233,24 @@ Merci de prendre en charge ma demande. 🙏`
               {/* Live calc */}
               {amt > 0 && (
                 <div className="bg-navy rounded-2xl p-5 mb-6 space-y-2.5">
-                  {[
-                    ['Montant envoyé', `${amt.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`, false],
-                    ['Frais (10%)', `+ ${fees.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`, false],
-                    ['Total à payer', `${total.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`, false],
-                    ['Bénéficiaire reçoit', received > 0 ? received.toLocaleString('fr-FR') + ' ' + (isMad ? 'FCFA' : 'MAD') : '—', true],
-                  ].map(([l, v, h]) => (
-                    <div key={l} className={`flex justify-between ${h ? 'pt-2 border-t border-white/10' : ''}`}>
-                      <span className={`text-sm ${h ? 'text-white font-bold' : 'text-blue-200'}`}>{l}</span>
-                      <span className={`font-bold ${h ? 'text-gold-DEFAULT' : 'text-white'}`}>{v}</span>
-                    </div>
-                  ))}
+                  <div className="flex justify-between">
+                    <span className="text-blue-200 text-sm">Montant envoyé</span>
+                    <span className="text-white font-bold">{amt.toLocaleString('fr-FR')} {isMad ? 'MAD' : 'FCFA'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-200 text-sm">Frais (10%)</span>
+                    <span className="text-white font-bold">+ {fees.toLocaleString('fr-FR')} {isMad ? 'MAD' : 'FCFA'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-200 text-sm">Total à payer</span>
+                    <span className="text-white font-bold">{total.toLocaleString('fr-FR')} {isMad ? 'MAD' : 'FCFA'}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-white/20 mt-1 rounded-xl px-2 py-2" style={{backgroundColor:'rgba(245,166,35,0.15)'}}>
+                    <span className="text-white font-bold text-sm">Bénéficiaire reçoit</span>
+                    <span style={{color:'#F5A623', fontWeight:'800', fontSize:'1rem'}}>
+                      {received > 0 ? received.toLocaleString('fr-FR') + ' ' + (isMad ? 'FCFA' : 'MAD') : '—'}
+                    </span>
+                  </div>
                 </div>
               )}
 
