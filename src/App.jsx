@@ -2,20 +2,31 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './components/AuthContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import Breadcrumb from './components/Breadcrumb'
+import CookieBanner from './components/CookieBanner'
+import MobileCTA from './components/MobileCTA'
+import SEOHead from './components/SEOHead'
 import Home from './pages/Home'
 import Transfer from './pages/Transfer'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Contact from './pages/Contact'
 import Social from './pages/Social'
+import FAQ from './pages/FAQ'
+import Dashboard from './pages/Dashboard'
+import Merci from './pages/Merci'
+import NotFound from './pages/NotFound'
 
 function Layout() {
   const { pathname } = useLocation()
-  const noFooter = ['/login', '/signup'].includes(pathname)
+  const noFooter = ['/login', '/signup', '/merci'].includes(pathname)
+  const isFullscreen = ['/login', '/signup', '/merci', '/404'].includes(pathname)
 
   return (
     <>
+      <SEOHead />
       <Navbar />
+      {!isFullscreen && <Breadcrumb />}
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -24,9 +35,15 @@ function Layout() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/social" element={<Social />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/merci" element={<Merci />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       {!noFooter && <Footer />}
+      <CookieBanner />
+      <MobileCTA />
     </>
   )
 }

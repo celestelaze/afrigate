@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, ChevronLeft, Check, ExternalLink } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, Loader, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthContext'
+import { openChatWithMessage } from '../lib/ghostchat'
+import { validatePhone, DIAL_CODES, getPlaceholder } from '../lib/phoneValidation'
 import {
   COUNTRIES, MOROCCO,
   RATE_MAD_TO_FCFA, RATE_FCFA_TO_MAD, FEES_PERCENT,
   AFRICA_SEND_METHODS, AFRICA_RECEIVE_METHODS,
   MOROCCO_SEND_METHODS, MOROCCO_RECEIVE_METHODS,
-  WHATSAPP_NUMBER,
 } from '../lib/constants'
 
 const STEPS = ['Direction', 'Pays', 'Paiement', 'Montant', 'Résumé']
@@ -17,6 +18,9 @@ export default function Transfer() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const [phoneError, setPhoneError] = useState('')
+  const [validatingPhone, setValidatingPhone] = useState(false)
+  const [phoneCountryCode, setPhoneCountryCode] = useState('')
   const [form, setForm] = useState({
     direction: '',        // 'MAD_TO_FCFA' | 'FCFA_TO_MAD'
     originCountry: null,
@@ -48,12 +52,23 @@ export default function Transfer() {
     if (step === 0) return !!form.direction
     if (step === 1) return form.originCountry && form.destCountry
     if (step === 2) return form.sendMethod && form.receiveMethod
-    if (step === 3) return amt > 0 && form.beneficiaryFirst && form.beneficiaryLast && form.beneficiaryPhone
+    if (step === 3) return amt > 0 && form.beneficiaryFirst && form.beneficiaryLast && form.beneficiaryPhone && phoneCountryCode && !validatingPhone && !phoneError
     return true
   }
 
   async function handleConfirm() {
-    const ref = `AFG-2025-${Math.random().toString(36).substring(2,8).toUpperCase()}`
+    const ref = `AFG-2026-${Math.random().toString(36).substring(2,8).toUpperCase()}`
+
+    // Validate phone number via NumLookup API
+    setValidatingPhone(true)
+    const { valid, formatted, error: phoneErr } = await validatePhone(form.beneficiaryPhone, phoneCountryCode)
+    setValidatingPhone(false)
+    if (!valid && phoneErr) {
+      setPhoneError(phoneErr || 'Numéro invalide')
+      setStep(3)
+      return
+    }
+    const fullPhone = formatted || `+${DIAL_CODES[phoneCountryCode]?.code}${form.beneficiaryPhone}`
 
     // Save to Supabase if logged in
     if (user) {
@@ -72,7 +87,7 @@ export default function Transfer() {
         destination_currency: isMad ? 'FCFA' : 'MAD',
         beneficiary_first_name: form.beneficiaryFirst,
         beneficiary_last_name: form.beneficiaryLast,
-        beneficiary_phone: form.beneficiaryPhone,
+        beneficiary_phone: fullPhone,
         status: 'pending',
         reference: ref,
       })
@@ -93,12 +108,15 @@ Je souhaite effectuer un transfert :
 🎯 Le bénéficiaire recevra : ${received.toLocaleString()} ${isMad ? 'FCFA' : 'MAD'}
 
 👤 Bénéficiaire : ${form.beneficiaryFirst} ${form.beneficiaryLast}
-📱 Tél bénéficiaire : ${form.beneficiaryPhone}
+📱 Tél bénéficiaire : ${fullPhone}
 🔖 Référence : ${ref}
 
 Merci de prendre en charge ma demande. 🙏`
 
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank')
+    // Open GhostChat with pre-filled message
+    openChatWithMessage(msg)
+    // Navigate to thank you page
+    navigate(`/merci?ref=${ref}`)
   }
 
   return (
@@ -266,10 +284,42 @@ Merci de prendre en charge ma demande. 🙏`
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy focus:border-gold-DEFAULT outline-none" />
                 </div>
               </div>
+              {/* Phone with auto country prefix */}
               <label className="block text-sm font-semibold text-navy mb-2">Téléphone bénéficiaire</label>
-              <input value={form.beneficiaryPhone} onChange={e => set('beneficiaryPhone', e.target.value)}
-                placeholder="+225 00 00 00 00"
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy focus:border-gold-DEFAULT outline-none mb-4" />
+              <div className="mb-1">
+                {/* Country selector for phone */}
+                <select
+                  value={phoneCountryCode}
+                  onChange={e => { setPhoneCountryCode(e.target.value); setPhoneError('') }}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy focus:border-gold-DEFAULT outline-none bg-white mb-2 text-sm">
+                  <option value="">— Pays du bénéficiaire —</option>
+                  {[...(isMad ? [{code:'CI',label:"Côte d'Ivoire",flag:'🇨🇮'},{code:'SN',label:'Sénégal',flag:'🇸🇳'},{code:'GW',label:'Guinée-Bissau',flag:'🇬🇼'},{code:'ML',label:'Mali',flag:'🇲🇱'},{code:'NE',label:'Niger',flag:'🇳🇪'},{code:'BF',label:'Burkina Faso',flag:'🇧🇫'}] : [{code:'MA',label:'Maroc',flag:'🇲🇦'}])].map(c => (
+                    <option key={c.code} value={c.code}>{c.flag} {c.label} (+{DIAL_CODES[c.code]?.code})</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-0 border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-gold-DEFAULT transition-colors">
+                  {phoneCountryCode && DIAL_CODES[phoneCountryCode] && (
+                    <div className="bg-gray-50 border-r border-gray-200 px-3 py-2.5 text-navy font-semibold text-sm flex-shrink-0 select-none">
+                      +{DIAL_CODES[phoneCountryCode].code}
+                    </div>
+                  )}
+                  <input
+                    value={form.beneficiaryPhone}
+                    onChange={e => { set('beneficiaryPhone', e.target.value); setPhoneError('') }}
+                    placeholder={phoneCountryCode ? getPlaceholder(phoneCountryCode) : "Choisissez le pays d'abord"}
+                    className="flex-1 px-4 py-2.5 text-navy outline-none bg-white text-sm"
+                    disabled={!phoneCountryCode}
+                  />
+                </div>
+                {phoneCountryCode && (
+                  <p className="text-xs text-gray-400 mt-1">Saisissez le numéro sans l'indicatif (+{DIAL_CODES[phoneCountryCode]?.code})</p>
+                )}
+                {phoneError && (
+                  <div className="flex items-center gap-1.5 mt-2 text-red-500 text-xs">
+                    <AlertCircle size={13} /> {phoneError}
+                  </div>
+                )}
+              </div>
 
               <label className="block text-sm font-semibold text-navy mb-2">Votre nom (expéditeur)</label>
               <input value={form.senderName} onChange={e => set('senderName', e.target.value)}
@@ -294,7 +344,7 @@ Merci de prendre en charge ma demande. 🙏`
                   ['Total à payer', `${total.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`],
                   ['Bénéficiaire reçoit', `${received.toLocaleString()} ${isMad ? 'FCFA' : 'MAD'}`],
                   ['Bénéficiaire', `${form.beneficiaryFirst} ${form.beneficiaryLast}`],
-                  ['Tél bénéficiaire', form.beneficiaryPhone],
+                  ['Tél bénéficiaire', fullPhone],
                 ].map(([l, v]) => (
                   <div key={l} className="flex justify-between py-2.5 border-b border-gray-100">
                     <span className="text-sm text-gray-500">{l}</span>
