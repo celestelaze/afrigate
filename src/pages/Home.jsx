@@ -52,8 +52,9 @@ export default function Home() {
               </p>
               <div className="flex flex-wrap gap-3 mb-10">
                 <Link to="/transfer"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gold-DEFAULT text-navy font-bold text-base hover:bg-gold-light transition-all shadow-lg shadow-gold-DEFAULT/30 animate-pulse-gold">
-                  Envoyer de l'argent <ArrowRight size={18} />
+                  className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl font-bold text-base transition-all shadow-xl"
+                  style={{backgroundColor:'#F5A623', color:'#1B2A6B', boxShadow:'0 0 0 4px rgba(245,166,35,0.3)'}}>
+                  💸 Envoyer de l'argent <ArrowRight size={18} />
                 </Link>
                 <a href="#how-it-works"
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl border-2 border-white/30 text-white font-semibold text-base hover:bg-white/10 transition-all">

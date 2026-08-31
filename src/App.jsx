@@ -4,7 +4,6 @@ import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Breadcrumb from './components/Breadcrumb'
 import CookieBanner from './components/CookieBanner'
-import MobileCTA from './components/MobileCTA'
 import SEOHead from './components/SEOHead'
 import Home from './pages/Home'
 import Transfer from './pages/Transfer'
@@ -43,7 +42,6 @@ function Layout() {
       </main>
       {!noFooter && <Footer />}
       <CookieBanner />
-      <MobileCTA />
     </>
   )
 }

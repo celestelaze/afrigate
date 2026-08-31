@@ -21,6 +21,12 @@ export default function Transfer() {
   const [phoneError, setPhoneError] = useState('')
   const [validatingPhone, setValidatingPhone] = useState(false)
   const [phoneCountryCode, setPhoneCountryCode] = useState('')
+
+  // Save transfer state to sessionStorage so it survives signup redirect
+  const saveAndRedirect = (direction) => {
+    sessionStorage.setItem('pending_transfer_direction', direction)
+    navigate('/signup?redirect=/transfer')
+  }
   const [form, setForm] = useState({
     direction: '',        // 'MAD_TO_FCFA' | 'FCFA_TO_MAD'
     originCountry: null,
@@ -113,10 +119,8 @@ Je souhaite effectuer un transfert :
 
 Merci de prendre en charge ma demande. 🙏`
 
-    // Open GhostChat with pre-filled message
+    // Open GhostChat with pre-filled message (shows widget with pre-filled text)
     openChatWithMessage(msg)
-    // Navigate to thank you page
-    navigate(`/merci?ref=${ref}`)
   }
 
   return (

@@ -19,7 +19,8 @@ export default function Login() {
     setLoading(true)
     try {
       await signIn({ email, password })
-      navigate('/transfer')
+      const redirect = new URLSearchParams(window.location.search).get('redirect') || '/transfer'
+      navigate(redirect)
     } catch (err) {
       setError('Email ou mot de passe incorrect.')
     } finally {
