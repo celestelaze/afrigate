@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Check, Loader, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthContext'
-import { validatePhone, DIAL_CODES, getPlaceholder } from '../lib/phoneValidation'
+import { DIAL_CODES } from '../lib/phoneValidation'
 import {
   COUNTRIES, MOROCCO,
   RATE_MAD_TO_FCFA, RATE_FCFA_TO_MAD, FEES_PERCENT,
@@ -57,23 +57,15 @@ export default function Transfer() {
     if (step === 0) return !!form.direction
     if (step === 1) return form.originCountry && form.destCountry
     if (step === 2) return form.sendMethod && form.receiveMethod
-    if (step === 3) return amt > 0 && form.beneficiaryFirst && form.beneficiaryLast && form.beneficiaryPhone && phoneCountryCode && !validatingPhone && !phoneError
+    if (step === 3) return amt > 0 && form.beneficiaryFirst && form.beneficiaryLast && form.beneficiaryPhone
     return true
   }
 
   async function handleConfirm() {
     const ref = `AFG-2026-${Math.random().toString(36).substring(2,8).toUpperCase()}`
-
-    // Validate phone number via NumLookup API
-    setValidatingPhone(true)
-    const { valid, formatted, error: phoneErr } = await validatePhone(form.beneficiaryPhone, phoneCountryCode)
-    setValidatingPhone(false)
-    if (!valid && phoneErr) {
-      setPhoneError(phoneErr || 'Numéro invalide')
-      setStep(3)
-      return
-    }
-    const fullPhone = formatted || `+${DIAL_CODES[phoneCountryCode]?.code}${form.beneficiaryPhone}`
+    // Build the full phone from prefix + local number
+    const dialCode = DIAL_CODES[phoneCountryCode]?.code || ''
+    const fullPhone = dialCode ? `+${dialCode}${form.beneficiaryPhone.replace(/^0+/,'')}` : form.beneficiaryPhone
 
     // Save to Supabase if logged in
     if (user) {
@@ -118,8 +110,16 @@ Je souhaite effectuer un transfert :
 
 Merci de prendre en charge ma demande. 🙏`
 
-    // Redirect to WhatsApp with pre-filled message
-    window.open(`https://wa.me/221776997546?text=${encodeURIComponent(msg)}`, '_blank')
+    // Build WhatsApp URL and navigate (works on all mobile browsers)
+    const waUrl = `https://wa.me/221776997546?text=${encodeURIComponent(msg)}`
+    // Use location.href for mobile compatibility (window.open blocked in async on Safari)
+    const a = document.createElement('a')
+    a.href = waUrl
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   return (
@@ -162,21 +162,56 @@ Merci de prendre en charge ma demande. 🙏`
               <h2 className="font-display text-xl font-bold text-navy mb-6">Quelle est la direction du transfert ?</h2>
               <div className="grid gap-4">
                 {[
-                  { val: 'MAD_TO_FCFA', from: MOROCCO, to: null, label: 'Depuis le Maroc vers l\'Afrique', sub: '' },
-                  { val: 'FCFA_TO_MAD', from: null, to: MOROCCO, label: 'Depuis l\'Afrique vers le Maroc', sub: '' },
-                ].map(d => (
-                  <button key={d.val} onClick={() => set('direction', d.val)}
-                    className={`p-5 rounded-2xl border-2 text-left transition-all ${
-                      form.direction === d.val ? 'border-gold-DEFAULT bg-gold-DEFAULT/5' : 'border-gray-200 hover:border-gray-300'
-                    }`}>
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="text-2xl">{d.val === 'MAD_TO_FCFA' ? '🇲🇦' : '🌍'}</span>
-                      <span className="text-2xl">→</span>
-                      <span className="text-2xl">{d.val === 'MAD_TO_FCFA' ? '🌍' : '🇲🇦'}</span>
-                    </div>
-                    <div className="font-display font-bold text-navy">{d.label}</div>
-                  </button>
-                ))}
+                  { val: 'MAD_TO_FCFA', e1: '🇲🇦', e2: '🌍', label: "Depuis le Maroc vers l'Afrique" },
+                  { val: 'FCFA_TO_MAD', e1: '🌍', e2: '🇲🇦', label: "Depuis l'Afrique vers le Maroc" },
+                ].map(d => {
+                  const active = form.direction === d.val
+                  return (
+                    <button
+                      key={d.val}
+                      onClick={() => {
+                        if (!user) { saveAndRedirect(d.val); return }
+                        set('direction', d.val)
+                      }}
+                      style={{
+                        padding: '20px',
+                        borderRadius: '16px',
+                        border: active ? '2.5px solid #1B2A6B' : '2px solid #e5e7eb',
+                        backgroundColor: active ? '#1B2A6B' : '#ffffff',
+                        textAlign: 'left',
+                        transition: 'all 0.2s',
+                        cursor: 'pointer',
+                        width: '100%',
+                      }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', fontSize: '26px' }}>
+                            <span>{d.e1}</span>
+                            <span style={{ color: active ? '#F5A623' : '#9ca3af', fontWeight: 'bold' }}>→</span>
+                            <span>{d.e2}</span>
+                          </div>
+                          <div style={{ fontWeight: '700', fontSize: '15px', color: active ? '#F5A623' : '#1B2A6B', fontFamily: 'Sora, sans-serif' }}>
+                            {d.label}
+                          </div>
+                        </div>
+                        {/* Checkmark badge when selected */}
+                        {active && (
+                          <div style={{
+                            width: '32px', height: '32px', borderRadius: '50%',
+                            backgroundColor: '#F5A623',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                              stroke="#1B2A6B" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}

@@ -1,71 +1,40 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
 import Logo from '../components/Logo'
 import { COUNTRIES, MOROCCO } from '../lib/constants'
-import { DIAL_CODES, validatePhone, getPlaceholder } from '../lib/phoneValidation'
 
-const allCountries = [MOROCCO, ...COUNTRIES]
+const ALL_COUNTRIES = [MOROCCO, ...COUNTRIES]
 
 export default function Signup() {
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', country: '', password: '', confirm: '' })
-  const [phoneLocal, setPhoneLocal] = useState('')
-  const [phoneCountry, setPhoneCountry] = useState('')
-  const [phoneError, setPhoneError] = useState('')
-  const [show, setShow] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const { signUp } = useAuth()
-  const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const redirectTo = params.get('redirect') || '/transfer'
+  const [firstName, setFirstName] = useState('')
+  const [lastName,  setLastName]  = useState('')
+  const [email,     setEmail]     = useState('')
+  const [phone,     setPhone]     = useState('')
+  const [country,   setCountry]   = useState('')
+  const [password,  setPassword]  = useState('')
+  const [confirm,   setConfirm]   = useState('')
+  const [show,      setShow]      = useState(false)
+  const [error,     setError]     = useState('')
+  const [loading,   setLoading]   = useState(false)
+  const [success,   setSuccess]   = useState(false)
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  // When country changes, auto-set phone country code
-  useEffect(() => {
-    if (form.country) {
-      const found = allCountries.find(c => c.name === form.country)
-      if (found) setPhoneCountry(found.code)
-    }
-  }, [form.country])
+  const { signUp }  = useAuth()
+  const navigate    = useNavigate()
+  const [params]    = useSearchParams()
+  const redirectTo  = params.get('redirect') || '/transfer'
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    if (form.password !== form.confirm) { setError('Les mots de passe ne correspondent pas.'); return }
-    if (form.password.length < 6) { setError('Le mot de passe doit faire au moins 6 caractères.'); return }
-    if (!phoneLocal || !phoneCountry) { setError('Veuillez saisir votre numéro de téléphone.'); return }
-
+    if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return }
+    if (password.length < 6)  { setError('Le mot de passe doit faire au moins 6 caractères.'); return }
     setLoading(true)
-
-    // Validate phone
-    const { valid, formatted, error: pErr } = await validatePhone(phoneLocal, phoneCountry)
-    if (!valid && pErr) {
-      setPhoneError(pErr)
-      setLoading(false)
-      return
-    }
-    const fullPhone = formatted || `+${DIAL_CODES[phoneCountry]?.code}${phoneLocal}`
-
     try {
-      await signUp({
-        email: form.email,
-        password: form.password,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        phone: fullPhone,
-        country: form.country,
-      })
+      await signUp({ email, password, firstName, lastName, phone, country })
       setSuccess(true)
-      // Restore pending transfer if any
-      const pendingDir = sessionStorage.getItem('pending_transfer_direction')
-      setTimeout(() => {
-        sessionStorage.removeItem('pending_transfer_direction')
-        navigate(redirectTo)
-      }, 1500)
+      setTimeout(() => navigate(redirectTo), 1500)
     } catch (err) {
       setError(err.message || 'Une erreur est survenue.')
     } finally {
@@ -98,109 +67,76 @@ export default function Signup() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-semibold text-navy mb-1.5">Prénom</label>
-                <input value={form.firstName} onChange={e => set('firstName', e.target.value)} required
+                <input value={firstName} onChange={e => setFirstName(e.target.value)} required
                   className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-gold-DEFAULT outline-none text-navy text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-navy mb-1.5">Nom</label>
-                <input value={form.lastName} onChange={e => set('lastName', e.target.value)} required
+                <input value={lastName} onChange={e => setLastName(e.target.value)} required
                   className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-gold-DEFAULT outline-none text-navy text-sm" />
               </div>
             </div>
 
-            {/* Email */}
             <div>
               <label className="block text-sm font-semibold text-navy mb-1.5">Email</label>
-              <input type="email" value={form.email} onChange={e => set('email', e.target.value)} required
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:border-gold-DEFAULT outline-none text-navy text-sm" />
             </div>
 
-            {/* Country */}
             <div>
               <label className="block text-sm font-semibold text-navy mb-1.5">Pays de résidence</label>
-              <select value={form.country} onChange={e => set('country', e.target.value)} required
+              <select value={country} onChange={e => setCountry(e.target.value)} required
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:border-gold-DEFAULT outline-none text-navy text-sm bg-white">
                 <option value="">Sélectionnez votre pays</option>
-                {allCountries.map(c => (
+                {ALL_COUNTRIES.map(c => (
                   <option key={c.code} value={c.name}>{c.flag} {c.name}</option>
                 ))}
               </select>
             </div>
 
-            {/* Phone with auto country code */}
             <div>
               <label className="block text-sm font-semibold text-navy mb-1.5">Téléphone</label>
-              <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-gold-DEFAULT transition-colors">
-                {/* Prefix badge */}
-                <div className="bg-gray-50 border-r border-gray-200 px-3 py-2.5 text-navy font-semibold text-sm flex-shrink-0 min-w-[60px] text-center">
-                  {phoneCountry && DIAL_CODES[phoneCountry] ? `+${DIAL_CODES[phoneCountry].code}` : '—'}
-                </div>
-                <input
-                  type="tel"
-                  value={phoneLocal}
-                  onChange={e => {
-                    let val = e.target.value.replace(/\s+/g, '')
-                    // Strip leading + or dial code if user pastes full number
-                    val = val.replace(/^\+/, '')
-                    if (phoneCountry && DIAL_CODES[phoneCountry]) {
-                      if (val.startsWith(DIAL_CODES[phoneCountry].code)) {
-                        val = val.slice(DIAL_CODES[phoneCountry].code.length)
-                      }
-                    }
-                    val = val.replace(/^0+/, '')
-                    setPhoneLocal(val)
-                    setPhoneError('')
-                  }}
-                  placeholder={phoneCountry ? getPlaceholder(phoneCountry) : 'Choisissez votre pays d\'abord'}
-                  disabled={!phoneCountry}
-                  className="flex-1 px-3 py-2.5 text-navy outline-none bg-white text-sm disabled:bg-gray-50 disabled:text-gray-400"
-                />
-              </div>
-              {phoneCountry && DIAL_CODES[phoneCountry] && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Saisissez sans l'indicatif (+{DIAL_CODES[phoneCountry].code}) — ex: {getPlaceholder(phoneCountry)}
-                </p>
-              )}
-              {phoneError && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {phoneError}
-                </p>
-              )}
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="+221 77 000 00 00"
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:border-gold-DEFAULT outline-none text-navy text-sm"
+              />
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-sm font-semibold text-navy mb-1.5">Mot de passe</label>
               <div className="relative">
-                <input type={show ? 'text' : 'password'} value={form.password} onChange={e => set('password', e.target.value)} required
+                <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 pr-12 focus:border-gold-DEFAULT outline-none text-navy text-sm" />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <button type="button" onClick={() => setShow(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
                   {show ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            {/* Confirm */}
             <div>
               <label className="block text-sm font-semibold text-navy mb-1.5">Confirmer le mot de passe</label>
-              <input type="password" value={form.confirm} onChange={e => set('confirm', e.target.value)} required
+              <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:border-gold-DEFAULT outline-none text-navy text-sm" />
             </div>
 
             <button type="submit" disabled={loading}
-              className="w-full py-3.5 rounded-xl font-bold text-navy transition-colors shadow-lg disabled:opacity-60 mt-2"
-              style={{backgroundColor:'#F5A623'}}>
-              {loading ? 'Vérification...' : 'Créer mon compte'}
+              className="w-full py-3.5 rounded-xl font-bold text-navy transition-all shadow-lg disabled:opacity-60"
+              style={{ backgroundColor: '#F5A623' }}>
+              {loading ? 'Création en cours…' : 'Créer mon compte'}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-400 mt-5">
             Déjà un compte ?{' '}
-            <Link to="/login" className="font-semibold hover:underline" style={{color:'#F5A623'}}>Se connecter</Link>
+            <Link to="/login" className="font-semibold hover:underline" style={{ color: '#F5A623' }}>
+              Se connecter
+            </Link>
           </p>
         </div>
       </div>
