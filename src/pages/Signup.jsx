@@ -142,7 +142,19 @@ export default function Signup() {
                 <input
                   type="tel"
                   value={phoneLocal}
-                  onChange={e => { setPhoneLocal(e.target.value.replace(/^0+/, '')); setPhoneError('') }}
+                  onChange={e => {
+                    let val = e.target.value.replace(/\s+/g, '')
+                    // Strip leading + or dial code if user pastes full number
+                    val = val.replace(/^\+/, '')
+                    if (phoneCountry && DIAL_CODES[phoneCountry]) {
+                      if (val.startsWith(DIAL_CODES[phoneCountry].code)) {
+                        val = val.slice(DIAL_CODES[phoneCountry].code.length)
+                      }
+                    }
+                    val = val.replace(/^0+/, '')
+                    setPhoneLocal(val)
+                    setPhoneError('')
+                  }}
                   placeholder={phoneCountry ? getPlaceholder(phoneCountry) : 'Choisissez votre pays d\'abord'}
                   disabled={!phoneCountry}
                   className="flex-1 px-3 py-2.5 text-navy outline-none bg-white text-sm disabled:bg-gray-50 disabled:text-gray-400"

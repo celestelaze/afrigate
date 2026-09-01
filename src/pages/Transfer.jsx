@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Check, Loader, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthContext'
-import { openChatWithMessage } from '../lib/ghostchat'
 import { validatePhone, DIAL_CODES, getPlaceholder } from '../lib/phoneValidation'
 import {
   COUNTRIES, MOROCCO,
@@ -119,8 +118,8 @@ Je souhaite effectuer un transfert :
 
 Merci de prendre en charge ma demande. 🙏`
 
-    // Open GhostChat with pre-filled message (shows widget with pre-filled text)
-    openChatWithMessage(msg)
+    // Redirect to WhatsApp with pre-filled message
+    window.open(`https://wa.me/221776997546?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   return (
