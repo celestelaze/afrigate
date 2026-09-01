@@ -87,7 +87,7 @@ export default function Contact() {
               </div>
             ))}
 
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer"
+            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Bonjour AfriGate 👋,\n\nJe souhaite obtenir de l'aide de votre support concernant une demande de transfert d'argent.\n\nPourriez-vous m'accompagner s'il vous plaît ?\n\nMerci.")}`} target="_blank" rel="noreferrer"
               className="flex items-center gap-4 bg-green-500 rounded-2xl p-5 hover:bg-green-600 transition-colors group">
               <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">

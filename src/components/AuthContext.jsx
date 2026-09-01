@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser]       = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -23,28 +23,73 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function fetchProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
     setProfile(data)
   }
 
   async function signUp({ email, password, firstName, lastName, phone, country }) {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) throw error
-    if (data.user) {
-      await supabase.from('profiles').insert({
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { first_name: firstName, last_name: lastName }
+      }
+    })
+
+    if (error) {
+      if (
+        error.message.includes('already registered') ||
+        error.message.includes('already been registered') ||
+        error.message.includes('User already registered')
+      ) {
+        throw new Error('Cet email est déjà utilisé. Connectez-vous plutôt.')
+      }
+      throw new Error(error.message)
+    }
+
+    // Supabase returns identities:[] when email already exists
+    if (data.user?.identities?.length === 0) {
+      throw new Error('Cet email est déjà utilisé. Connectez-vous plutôt.')
+    }
+
+    // Save profile regardless of email confirmation state
+    if (data.user?.id) {
+      await supabase.from('profiles').upsert({
         id: data.user.id,
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        country,
+        first_name: firstName || '',
+        last_name: lastName || '',
+        phone: phone || '',
+        country: country || '',
       })
     }
-    return data
+
+    // ✅ Success — whether email confirmation is needed or not
+    // We don't throw on missing session. The Signup page handles both cases.
+    return {
+      user: data.user,
+      session: data.session,
+      needsEmailConfirmation: data.user && !data.session
+    }
   }
 
   async function signIn({ email, password }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
+    if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        throw new Error('Veuillez confirmer votre adresse email. Vérifiez votre boîte mail (et les spams).')
+      }
+      if (
+        error.message.includes('Invalid login credentials') ||
+        error.message.includes('invalid_credentials')
+      ) {
+        throw new Error('Email ou mot de passe incorrect.')
+      }
+      throw new Error(error.message)
+    }
     return data
   }
 
