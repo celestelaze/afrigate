@@ -3,13 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Check, Loader, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthContext'
-import { DIAL_CODES } from '../lib/phoneValidation'
 import {
   COUNTRIES, MOROCCO,
   RATE_MAD_TO_FCFA, RATE_FCFA_TO_MAD, FEES_PERCENT,
   AFRICA_SEND_METHODS, AFRICA_RECEIVE_METHODS,
   MOROCCO_SEND_METHODS, MOROCCO_RECEIVE_METHODS,
 } from '../lib/constants'
+
+const DIAL_CODES = {
+  MA:{code:'212'}, CI:{code:'225'}, SN:{code:'221'},
+  GW:{code:'245'}, ML:{code:'223'}, NE:{code:'227'}, BF:{code:'226'},
+}
 
 const STEPS = ['Direction', 'Pays', 'Paiement', 'Montant', 'Résumé']
 

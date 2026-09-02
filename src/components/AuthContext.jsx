@@ -23,41 +23,44 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function fetchProfile(userId) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      setProfile(data)
+    } catch {}
   }
 
   async function signUp({ email, password, firstName, lastName, phone, country }) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { first_name: firstName, last_name: lastName }
-      }
-    })
+    let data, error
+
+    try {
+      const result = await supabase.auth.signUp({ email, password })
+      data = result.data
+      error = result.error
+    } catch (networkErr) {
+      throw new Error('Connexion impossible. Vérifiez votre connexion internet.')
+    }
 
     if (error) {
-      if (
-        error.message.includes('already registered') ||
-        error.message.includes('already been registered') ||
-        error.message.includes('User already registered')
-      ) {
+      const msg = error.message || ''
+      if (msg.includes('already registered') || msg.includes('User already registered')) {
         throw new Error('Cet email est déjà utilisé. Connectez-vous plutôt.')
       }
-      throw new Error(error.message)
+      if (msg.includes('rate limit') || msg.includes('too many')) {
+        throw new Error('Trop de tentatives. Attendez quelques minutes.')
+      }
+      throw new Error('Inscription impossible : ' + msg)
     }
 
-    // Supabase returns identities:[] when email already exists
-    if (data.user?.identities?.length === 0) {
-      throw new Error('Cet email est déjà utilisé. Connectez-vous plutôt.')
+    if (!data?.user) {
+      throw new Error('Erreur inattendue lors de l\'inscription.')
     }
 
-    // Save profile regardless of email confirmation state
-    if (data.user?.id) {
+    // Save profile (best-effort, don't fail signup if this errors)
+    try {
       await supabase.from('profiles').upsert({
         id: data.user.id,
         first_name: firstName || '',
@@ -65,36 +68,42 @@ export function AuthProvider({ children }) {
         phone: phone || '',
         country: country || '',
       })
-    }
+    } catch {}
 
-    // ✅ Success — whether email confirmation is needed or not
-    // We don't throw on missing session. The Signup page handles both cases.
     return {
       user: data.user,
       session: data.session,
-      needsEmailConfirmation: data.user && !data.session
+      needsEmailConfirmation: !!data.user && !data.session,
     }
   }
 
   async function signIn({ email, password }) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    let data, error
+
+    try {
+      const result = await supabase.auth.signInWithPassword({ email, password })
+      data = result.data
+      error = result.error
+    } catch (networkErr) {
+      throw new Error('Connexion impossible. Vérifiez votre connexion internet.')
+    }
+
     if (error) {
-      if (error.message.includes('Email not confirmed')) {
-        throw new Error('Veuillez confirmer votre adresse email. Vérifiez votre boîte mail (et les spams).')
+      const msg = error.message || ''
+      if (msg.includes('Email not confirmed')) {
+        throw new Error('Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
       }
-      if (
-        error.message.includes('Invalid login credentials') ||
-        error.message.includes('invalid_credentials')
-      ) {
+      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
         throw new Error('Email ou mot de passe incorrect.')
       }
-      throw new Error(error.message)
+      throw new Error('Connexion impossible : ' + msg)
     }
+
     return data
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    try { await supabase.auth.signOut() } catch {}
   }
 
   return (
