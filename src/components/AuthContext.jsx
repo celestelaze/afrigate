@@ -24,25 +24,14 @@ export function AuthProvider({ children }) {
 
   async function fetchProfile(userId) {
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
       setProfile(data)
     } catch {}
   }
 
   async function signUp({ email, password, firstName, lastName, phone, country }) {
-    let data, error
-
-    try {
-      const result = await supabase.auth.signUp({ email, password })
-      data = result.data
-      error = result.error
-    } catch (networkErr) {
-      throw new Error('Connexion impossible. Vérifiez votre connexion internet.')
-    }
+    // 1. Create the account
+    const { data, error } = await supabase.auth.signUp({ email, password })
 
     if (error) {
       const msg = error.message || ''
@@ -52,51 +41,49 @@ export function AuthProvider({ children }) {
       if (msg.includes('rate limit') || msg.includes('too many')) {
         throw new Error('Trop de tentatives. Attendez quelques minutes.')
       }
-      throw new Error('Inscription impossible : ' + msg)
+      throw new Error(msg || 'Inscription impossible.')
     }
 
-    if (!data?.user) {
-      throw new Error('Erreur inattendue lors de l\'inscription.')
+    if (!data?.user) throw new Error('Erreur lors de la création du compte.')
+
+    // 2. Our DB trigger auto-confirms the email. Try immediate sign-in.
+    let session = data.session
+    if (!session) {
+      const { data: signInData } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInData?.session) session = signInData.session
     }
 
-    // Save profile (best-effort, don't fail signup if this errors)
+    // 3. Save profile
+    const userId = data.user.id
     try {
       await supabase.from('profiles').upsert({
-        id: data.user.id,
+        id: userId,
         first_name: firstName || '',
-        last_name: lastName || '',
-        phone: phone || '',
-        country: country || '',
+        last_name:  lastName  || '',
+        phone:      phone     || '',
+        country:    country   || '',
       })
     } catch {}
 
     return {
       user: data.user,
-      session: data.session,
-      needsEmailConfirmation: !!data.user && !data.session,
+      session,                          // non-null if trigger worked
+      needsEmailConfirmation: !session, // only true if trigger somehow failed
     }
   }
 
   async function signIn({ email, password }) {
-    let data, error
-
-    try {
-      const result = await supabase.auth.signInWithPassword({ email, password })
-      data = result.data
-      error = result.error
-    } catch (networkErr) {
-      throw new Error('Connexion impossible. Vérifiez votre connexion internet.')
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       const msg = error.message || ''
       if (msg.includes('Email not confirmed')) {
-        throw new Error('Confirmez votre email avant de vous connecter. Vérifiez vos spams.')
+        throw new Error('Email non confirmé. Vérifiez vos spams ou contactez le support.')
       }
-      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+      if (msg.includes('Invalid login') || msg.includes('invalid_credentials')) {
         throw new Error('Email ou mot de passe incorrect.')
       }
-      throw new Error('Connexion impossible : ' + msg)
+      throw new Error(msg || 'Connexion impossible.')
     }
 
     return data
