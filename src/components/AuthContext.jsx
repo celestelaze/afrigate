@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null)
+  const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -29,61 +29,76 @@ export function AuthProvider({ children }) {
     } catch {}
   }
 
+  /**
+   * SIGNUP — Uses our custom SQL function `register_user` which:
+   *   1. Creates the user directly in auth.users WITH email_confirmed_at = NOW()
+   *   2. Creates the profile row
+   *   3. Returns {success, user_id} or {success:false, error, message}
+   * Then immediately calls signInWithPassword to get a session.
+   * This completely bypasses Supabase email confirmation.
+   */
   async function signUp({ email, password, firstName, lastName, phone, country }) {
-    // 1. Create the account
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    // Step 1: Create user via our SQL function (email pre-confirmed)
+    const { data: rpcData, error: rpcError } = await supabase.rpc('register_user', {
+      p_email:      email.trim().toLowerCase(),
+      p_password:   password,
+      p_first_name: firstName || '',
+      p_last_name:  lastName  || '',
+      p_phone:      phone     || '',
+      p_country:    country   || '',
+    })
 
-    if (error) {
-      const msg = error.message || ''
-      if (msg.includes('already registered') || msg.includes('User already registered')) {
+    if (rpcError) {
+      throw new Error('Erreur de connexion au serveur. Réessayez.')
+    }
+
+    if (!rpcData?.success) {
+      const msg = rpcData?.message || 'Inscription impossible.'
+      if (rpcData?.error === 'email_exists') {
         throw new Error('Cet email est déjà utilisé. Connectez-vous plutôt.')
       }
-      if (msg.includes('rate limit') || msg.includes('too many')) {
-        throw new Error('Trop de tentatives. Attendez quelques minutes.')
-      }
-      throw new Error(msg || 'Inscription impossible.')
+      throw new Error(msg)
     }
 
-    if (!data?.user) throw new Error('Erreur lors de la création du compte.')
+    // Step 2: Sign in immediately (email is already confirmed in DB)
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email:    email.trim().toLowerCase(),
+      password,
+    })
 
-    // 2. Our DB trigger auto-confirms the email. Try immediate sign-in.
-    let session = data.session
-    if (!session) {
-      const { data: signInData } = await supabase.auth.signInWithPassword({ email, password })
-      if (signInData?.session) session = signInData.session
+    if (signInError || !signInData?.session) {
+      // Account created but session failed — tell user to login
+      return { success: true, session: null, needsLogin: true }
     }
 
-    // 3. Save profile
-    const userId = data.user.id
-    try {
-      await supabase.from('profiles').upsert({
-        id: userId,
-        first_name: firstName || '',
-        last_name:  lastName  || '',
-        phone:      phone     || '',
-        country:    country   || '',
-      })
-    } catch {}
-
-    return {
-      user: data.user,
-      session,                          // non-null if trigger worked
-      needsEmailConfirmation: !session, // only true if trigger somehow failed
-    }
+    return { success: true, session: signInData.session, needsLogin: false }
   }
 
+  /**
+   * SIGNIN — Standard Supabase signIn with clear French error messages
+   */
   async function signIn({ email, password }) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
 
     if (error) {
       const msg = error.message || ''
       if (msg.includes('Email not confirmed')) {
-        throw new Error('Email non confirmé. Vérifiez vos spams ou contactez le support.')
+        throw new Error('Email non confirmé. Contactez le support AfriGate.')
       }
       if (msg.includes('Invalid login') || msg.includes('invalid_credentials')) {
         throw new Error('Email ou mot de passe incorrect.')
       }
-      throw new Error(msg || 'Connexion impossible.')
+      if (msg.includes('rate limit') || msg.includes('too many')) {
+        throw new Error('Trop de tentatives. Attendez quelques minutes.')
+      }
+      throw new Error('Connexion impossible : ' + msg)
+    }
+
+    if (!data?.session) {
+      throw new Error('Connexion échouée. Réessayez.')
     }
 
     return data
