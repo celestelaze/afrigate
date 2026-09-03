@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, ChevronLeft, Check, Loader, AlertCircle } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthContext'
 import {
@@ -10,9 +10,15 @@ import {
   MOROCCO_SEND_METHODS, MOROCCO_RECEIVE_METHODS,
 } from '../lib/constants'
 
+// Dial codes + phone placeholders per country
 const DIAL_CODES = {
-  MA:{code:'212'}, CI:{code:'225'}, SN:{code:'221'},
-  GW:{code:'245'}, ML:{code:'223'}, NE:{code:'227'}, BF:{code:'226'},
+  MA: { code: '212', placeholder: '6 12 34 56 78' },
+  CI: { code: '225', placeholder: '07 00 00 00 00' },
+  SN: { code: '221', placeholder: '77 000 00 00'  },
+  GW: { code: '245', placeholder: '95 000 00 00'  },
+  ML: { code: '223', placeholder: '70 00 00 00'   },
+  NE: { code: '227', placeholder: '90 00 00 00'   },
+  BF: { code: '226', placeholder: '70 00 00 00'   },
 }
 
 const STEPS = ['Direction', 'Pays', 'Paiement', 'Montant', 'Résumé']
@@ -21,81 +27,88 @@ export default function Transfer() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
-  const [phoneError, setPhoneError] = useState('')
-  const [validatingPhone, setValidatingPhone] = useState(false)
-  const [phoneCountryCode, setPhoneCountryCode] = useState('')
+  const [benCountryCode, setBenCountryCode] = useState('')
 
-  // Save transfer state to sessionStorage so it survives signup redirect
   const saveAndRedirect = (direction) => {
     sessionStorage.setItem('pending_transfer_direction', direction)
     navigate('/signup?redirect=/transfer')
   }
+
   const [form, setForm] = useState({
-    direction: '',        // 'MAD_TO_FCFA' | 'FCFA_TO_MAD'
-    originCountry: null,
-    destCountry: null,
-    sendMethod: null,
-    receiveMethod: null,
-    amount: '',
+    direction:        '',
+    originCountry:    null,
+    destCountry:      null,
+    sendMethod:       null,
+    receiveMethod:    null,
+    amount:           '',
     beneficiaryFirst: '',
-    beneficiaryLast: '',
-    beneficiaryPhone: '',
-    senderName: profile ? `${profile.first_name} ${profile.last_name}` : '',
+    beneficiaryLast:  '',
+    beneficiaryPhone: '', // local number without dial code
+    senderName:       profile ? `${profile.first_name} ${profile.last_name}` : '',
   })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const isMad = form.direction === 'MAD_TO_FCFA'
-  const rate = isMad ? RATE_MAD_TO_FCFA : RATE_FCFA_TO_MAD
-  const amt = parseFloat(form.amount) || 0
-  const fees = Math.round(amt * FEES_PERCENT * 100) / 100
-  const total = Math.round((amt + fees) * 100) / 100
-  const received = isMad
+  const isMad     = form.direction === 'MAD_TO_FCFA'
+  const rate      = isMad ? RATE_MAD_TO_FCFA : RATE_FCFA_TO_MAD
+  const amt       = parseFloat(form.amount) || 0
+  const fees      = Math.round(amt * FEES_PERCENT * 100) / 100
+  const total     = Math.round((amt + fees) * 100) / 100
+  const received  = isMad
     ? Math.round(amt * rate)
     : Math.round((amt / rate) * 100) / 100
 
-  const sendMethods = isMad ? MOROCCO_SEND_METHODS : AFRICA_SEND_METHODS
+  // Build full beneficiary phone
+  const dialInfo  = DIAL_CODES[benCountryCode]
+  const fullPhone = dialInfo && form.beneficiaryPhone
+    ? `+${dialInfo.code}${form.beneficiaryPhone.replace(/^0+/, '')}`
+    : form.beneficiaryPhone
+
+  const sendMethods    = isMad ? MOROCCO_SEND_METHODS : AFRICA_SEND_METHODS
   const receiveMethods = isMad ? AFRICA_RECEIVE_METHODS : MOROCCO_RECEIVE_METHODS
+
+  // Countries for beneficiary phone selector
+  const benCountries = isMad
+    ? [{code:'CI', label:"Côte d'Ivoire", flag:'🇨🇮'}, {code:'SN', label:'Sénégal', flag:'🇸🇳'}, {code:'GW', label:'Guinée-Bissau', flag:'🇬🇼'}, {code:'ML', label:'Mali', flag:'🇲🇱'}, {code:'NE', label:'Niger', flag:'🇳🇪'}, {code:'BF', label:'Burkina Faso', flag:'🇧🇫'}]
+    : [{code:'MA', label:'Maroc', flag:'🇲🇦'}]
 
   function canNext() {
     if (step === 0) return !!form.direction
     if (step === 1) return form.originCountry && form.destCountry
     if (step === 2) return form.sendMethod && form.receiveMethod
-    if (step === 3) return amt > 0 && form.beneficiaryFirst && form.beneficiaryLast && form.beneficiaryPhone
+    if (step === 3) return amt > 0 && form.beneficiaryFirst && form.beneficiaryLast && form.beneficiaryPhone && benCountryCode
     return true
   }
 
   async function handleConfirm() {
-    const ref = `AFG-2026-${Math.random().toString(36).substring(2,8).toUpperCase()}`
-    // Build the full phone from prefix + local number
-    const dialCode = DIAL_CODES[phoneCountryCode]?.code || ''
-    const fullPhone = dialCode ? `+${dialCode}${form.beneficiaryPhone.replace(/^0+/,'')}` : form.beneficiaryPhone
+    const ref = `AFG-2026-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
 
-    // Save to Supabase if logged in
     if (user) {
-      await supabase.from('transfers').insert({
-        user_id: user.id,
-        direction: form.direction,
-        origin_country: form.originCountry?.name,
-        destination_country: form.destCountry?.name,
-        send_method: form.sendMethod?.name,
-        receive_method: form.receiveMethod?.name,
-        amount: amt,
-        fees,
-        total_to_pay: total,
-        amount_received: received,
-        origin_currency: isMad ? 'MAD' : 'FCFA',
-        destination_currency: isMad ? 'FCFA' : 'MAD',
-        beneficiary_first_name: form.beneficiaryFirst,
-        beneficiary_last_name: form.beneficiaryLast,
-        beneficiary_phone: fullPhone,
-        status: 'pending',
-        reference: ref,
-      })
+      try {
+        await supabase.from('transfers').insert({
+          user_id:               user.id,
+          direction:             form.direction,
+          origin_country:        form.originCountry?.name,
+          destination_country:   form.destCountry?.name,
+          send_method:           form.sendMethod?.name,
+          receive_method:        form.receiveMethod?.name,
+          amount:                amt,
+          fees,
+          total_to_pay:          total,
+          amount_received:       received,
+          origin_currency:       isMad ? 'MAD' : 'FCFA',
+          destination_currency:  isMad ? 'FCFA' : 'MAD',
+          beneficiary_first_name: form.beneficiaryFirst,
+          beneficiary_last_name:  form.beneficiaryLast,
+          beneficiary_phone:      fullPhone,
+          status:                'pending',
+          reference:             ref,
+        })
+      } catch {}
     }
 
-    // Build WhatsApp message
-    const msg = `Bonjour AfriGate 👋
+    const msg =
+`Bonjour AfriGate 👋
 
 Je souhaite effectuer un transfert :
 
@@ -103,10 +116,10 @@ Je souhaite effectuer un transfert :
 📥 Destination : ${form.destCountry?.flag} ${form.destCountry?.name}
 💳 Moyen d'envoi : ${form.sendMethod?.name}
 📦 Moyen de réception : ${form.receiveMethod?.name}
-💵 Montant envoyé : ${amt.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}
-💰 Frais (10%) : ${fees.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}
-✅ Total à payer : ${total.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}
-🎯 Le bénéficiaire recevra : ${received.toLocaleString()} ${isMad ? 'FCFA' : 'MAD'}
+💵 Montant envoyé : ${amt.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}
+💰 Frais (10%) : ${fees.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}
+✅ Total à payer : ${total.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}
+🎯 Le bénéficiaire recevra : ${received.toLocaleString('fr-FR')} ${isMad ? 'FCFA' : 'MAD'}
 
 👤 Bénéficiaire : ${form.beneficiaryFirst} ${form.beneficiaryLast}
 📱 Tél bénéficiaire : ${fullPhone}
@@ -114,11 +127,9 @@ Je souhaite effectuer un transfert :
 
 Merci de prendre en charge ma demande. 🙏`
 
-    // Build WhatsApp URL and navigate (works on all mobile browsers)
-    const waUrl = `https://wa.me/221776997546?text=${encodeURIComponent(msg)}`
-    // Use location.href for mobile compatibility (window.open blocked in async on Safari)
+    // Open WhatsApp — anchor click bypasses iOS Safari async popup block
     const a = document.createElement('a')
-    a.href = waUrl
+    a.href = `https://wa.me/221776997546?text=${encodeURIComponent(msg)}`
     a.target = '_blank'
     a.rel = 'noopener noreferrer'
     document.body.appendChild(a)
@@ -127,7 +138,7 @@ Merci de prendre en charge ma demande. 🙏`
   }
 
   return (
-    <div className="min-h-screen bg-navy/3 pt-24 pb-16">
+    <div className="min-h-screen pt-24 pb-16" style={{ backgroundColor: '#f8f9ff' }}>
       <div className="max-w-2xl mx-auto px-4">
 
         {/* Header */}
@@ -142,7 +153,7 @@ Merci de prendre en charge ma demande. 🙏`
             <div key={s} className="flex items-center flex-1">
               <div className="flex flex-col items-center flex-1">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                  i < step ? 'bg-green-500 text-white' : i === step ? 'bg-navy text-white shadow-lg shadow-navy/30' : 'bg-gray-200 text-gray-400'
+                  i < step ? 'bg-green-500 text-white' : i === step ? 'bg-navy text-white' : 'bg-gray-200 text-gray-400'
                 }`}>
                   {i < step ? <Check size={16} /> : i + 1}
                 </div>
@@ -151,7 +162,7 @@ Merci de prendre en charge ma demande. 🙏`
                 </span>
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`h-0.5 flex-1 mx-1 transition-all ${i < step ? 'bg-green-400' : 'bg-gray-200'}`} />
+                <div className={`h-0.5 flex-1 mx-1 ${i < step ? 'bg-green-400' : 'bg-gray-200'}`} />
               )}
             </div>
           ))}
@@ -160,10 +171,12 @@ Merci de prendre en charge ma demande. 🙏`
         {/* Card */}
         <div className="bg-white rounded-3xl shadow-xl p-8">
 
-          {/* STEP 0 — Direction */}
+          {/* ── STEP 0 : Direction ── */}
           {step === 0 && (
             <div>
-              <h2 className="font-display text-xl font-bold text-navy mb-6">Quelle est la direction du transfert ?</h2>
+              <h2 className="font-display text-xl font-bold text-navy mb-6">
+                Quelle est la direction du transfert ?
+              </h2>
               <div className="grid gap-4">
                 {[
                   { val: 'MAD_TO_FCFA', e1: '🇲🇦', e2: '🌍', label: "Depuis le Maroc vers l'Afrique" },
@@ -171,21 +184,16 @@ Merci de prendre en charge ma demande. 🙏`
                 ].map(d => {
                   const active = form.direction === d.val
                   return (
-                    <button
-                      key={d.val}
+                    <button key={d.val}
                       onClick={() => {
                         if (!user) { saveAndRedirect(d.val); return }
                         set('direction', d.val)
                       }}
                       style={{
-                        padding: '20px',
-                        borderRadius: '16px',
+                        padding: '20px', borderRadius: '16px', width: '100%', textAlign: 'left',
                         border: active ? '2.5px solid #1B2A6B' : '2px solid #e5e7eb',
-                        backgroundColor: active ? '#1B2A6B' : '#ffffff',
-                        textAlign: 'left',
-                        transition: 'all 0.2s',
-                        cursor: 'pointer',
-                        width: '100%',
+                        backgroundColor: active ? '#1B2A6B' : '#fff',
+                        cursor: 'pointer', transition: 'all 0.2s',
                       }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
@@ -194,20 +202,13 @@ Merci de prendre en charge ma demande. 🙏`
                             <span style={{ color: active ? '#F5A623' : '#9ca3af', fontWeight: 'bold' }}>→</span>
                             <span>{d.e2}</span>
                           </div>
-                          <div style={{ fontWeight: '700', fontSize: '15px', color: active ? '#F5A623' : '#1B2A6B', fontFamily: 'Sora, sans-serif' }}>
+                          <div style={{ fontWeight: '700', fontSize: '15px', fontFamily: 'Sora,sans-serif', color: active ? '#F5A623' : '#1B2A6B' }}>
                             {d.label}
                           </div>
                         </div>
-                        {/* Checkmark badge when selected */}
                         {active && (
-                          <div style={{
-                            width: '32px', height: '32px', borderRadius: '50%',
-                            backgroundColor: '#F5A623',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                              stroke="#1B2A6B" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: '#F5A623', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B2A6B" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12"/>
                             </svg>
                           </div>
@@ -220,188 +221,175 @@ Merci de prendre en charge ma demande. 🙏`
             </div>
           )}
 
-          {/* STEP 1 — Countries */}
+          {/* ── STEP 1 : Pays ── */}
           {step === 1 && (
             <div>
               <h2 className="font-display text-xl font-bold text-navy mb-6">Sélectionnez les pays</h2>
               {isMad ? (
                 <>
-                  <CountrySelect
-                    label="🇲🇦 Pays d'envoi"
-                    options={[MOROCCO]}
+                  <CountrySelect label="🇲🇦 Pays d'envoi" options={[MOROCCO]}
                     value={form.originCountry || MOROCCO}
-                    onChange={v => set('originCountry', v)}
-                    disabled
-                  />
-                  <CountrySelect
-                    label="Pays de destination"
-                    options={COUNTRIES}
+                    onChange={v => set('originCountry', v)} disabled />
+                  <CountrySelect label="Pays de destination" options={COUNTRIES}
                     value={form.destCountry}
-                    onChange={v => { set('destCountry', v); set('originCountry', MOROCCO) }}
-                  />
+                    onChange={v => { set('destCountry', v); set('originCountry', MOROCCO) }} />
                 </>
               ) : (
                 <>
-                  <CountrySelect
-                    label="Pays d'origine"
-                    options={COUNTRIES}
+                  <CountrySelect label="Pays d'origine" options={COUNTRIES}
                     value={form.originCountry}
-                    onChange={v => { set('originCountry', v); set('destCountry', MOROCCO) }}
-                  />
-                  <CountrySelect
-                    label="🇲🇦 Pays de destination"
-                    options={[MOROCCO]}
+                    onChange={v => { set('originCountry', v); set('destCountry', MOROCCO) }} />
+                  <CountrySelect label="🇲🇦 Pays de destination" options={[MOROCCO]}
                     value={form.destCountry || MOROCCO}
-                    onChange={v => set('destCountry', v)}
-                    disabled
-                  />
+                    onChange={v => set('destCountry', v)} disabled />
                 </>
               )}
             </div>
           )}
 
-          {/* STEP 2 — Payment methods */}
+          {/* ── STEP 2 : Paiement ── */}
           {step === 2 && (
             <div>
               <h2 className="font-display text-xl font-bold text-navy mb-6">Moyens de paiement</h2>
               <MethodSelect
                 label={`Moyen d'envoi (${isMad ? 'Maroc' : form.originCountry?.name || 'Afrique'})`}
-                options={sendMethods}
-                value={form.sendMethod}
-                onChange={v => set('sendMethod', v)}
-              />
+                options={sendMethods} value={form.sendMethod} onChange={v => set('sendMethod', v)} />
               <MethodSelect
                 label={`Moyen de réception (${isMad ? form.destCountry?.name || 'Afrique' : 'Maroc'})`}
-                options={receiveMethods}
-                value={form.receiveMethod}
-                onChange={v => set('receiveMethod', v)}
-              />
+                options={receiveMethods} value={form.receiveMethod} onChange={v => set('receiveMethod', v)} />
             </div>
           )}
 
-          {/* STEP 3 — Amount + beneficiary */}
+          {/* ── STEP 3 : Montant + Bénéficiaire ── */}
           {step === 3 && (
             <div>
               <h2 className="font-display text-xl font-bold text-navy mb-6">Montant et bénéficiaire</h2>
+
+              {/* Amount */}
               <label className="block text-sm font-semibold text-navy mb-2">
                 Montant à envoyer ({isMad ? 'MAD' : 'FCFA'})
               </label>
               <input type="number" value={form.amount} onChange={e => set('amount', e.target.value)}
                 placeholder={isMad ? 'ex: 500' : 'ex: 25000'}
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-navy font-semibold text-lg focus:border-gold-DEFAULT outline-none transition-colors mb-4" />
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-navy font-semibold text-lg outline-none focus:border-yellow-400 transition-colors mb-4" />
 
-              {/* Live calc */}
+              {/* Live calculation */}
               {amt > 0 && (
-                <div className="bg-navy rounded-2xl p-5 mb-6 space-y-2.5">
-                  <div className="flex justify-between">
-                    <span className="text-blue-200 text-sm">Montant envoyé</span>
-                    <span className="text-white font-bold">{amt.toLocaleString('fr-FR')} {isMad ? 'MAD' : 'FCFA'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-200 text-sm">Frais (10%)</span>
-                    <span className="text-white font-bold">+ {fees.toLocaleString('fr-FR')} {isMad ? 'MAD' : 'FCFA'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-200 text-sm">Total à payer</span>
-                    <span className="text-white font-bold">{total.toLocaleString('fr-FR')} {isMad ? 'MAD' : 'FCFA'}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-white/20 mt-1 rounded-xl px-2 py-2" style={{backgroundColor:'rgba(245,166,35,0.15)'}}>
+                <div className="rounded-2xl p-5 mb-6 space-y-2.5" style={{ backgroundColor: '#1B2A6B' }}>
+                  {[
+                    ['Montant envoyé',  `${amt.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}`],
+                    ['Frais (10%)',     `+ ${fees.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}`],
+                    ['Total à payer',   `${total.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}`],
+                  ].map(([l, v]) => (
+                    <div key={l} className="flex justify-between">
+                      <span className="text-blue-200 text-sm">{l}</span>
+                      <span className="text-white font-bold text-sm">{v}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center pt-3 border-t border-white/20 rounded-xl px-2 py-2"
+                    style={{ backgroundColor: 'rgba(245,166,35,0.18)' }}>
                     <span className="text-white font-bold text-sm">Bénéficiaire reçoit</span>
-                    <span style={{color:'#F5A623', fontWeight:'800', fontSize:'1rem'}}>
-                      {received > 0 ? received.toLocaleString('fr-FR') + ' ' + (isMad ? 'FCFA' : 'MAD') : '—'}
+                    <span style={{ color: '#F5A623', fontWeight: 800, fontSize: '1rem' }}>
+                      {received.toLocaleString('fr-FR')} {isMad ? 'FCFA' : 'MAD'}
                     </span>
                   </div>
                 </div>
               )}
 
+              {/* Beneficiary name */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-semibold text-navy mb-2">Prénom bénéficiaire</label>
                   <input value={form.beneficiaryFirst} onChange={e => set('beneficiaryFirst', e.target.value)}
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy focus:border-gold-DEFAULT outline-none" />
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy outline-none focus:border-yellow-400" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-navy mb-2">Nom bénéficiaire</label>
                   <input value={form.beneficiaryLast} onChange={e => set('beneficiaryLast', e.target.value)}
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy focus:border-gold-DEFAULT outline-none" />
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy outline-none focus:border-yellow-400" />
                 </div>
               </div>
-              {/* Phone with auto country prefix */}
+
+              {/* Beneficiary phone — simple, NO NumLookup */}
               <label className="block text-sm font-semibold text-navy mb-2">Téléphone bénéficiaire</label>
-              <div className="mb-1">
-                {/* Country selector for phone */}
-                <select
-                  value={phoneCountryCode}
-                  onChange={e => { setPhoneCountryCode(e.target.value); setPhoneError('') }}
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy focus:border-gold-DEFAULT outline-none bg-white mb-2 text-sm">
+              <div className="mb-4">
+                {/* Country picker */}
+                <select value={benCountryCode}
+                  onChange={e => { setBenCountryCode(e.target.value); set('beneficiaryPhone', '') }}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy outline-none bg-white focus:border-yellow-400 mb-2 text-sm">
                   <option value="">— Pays du bénéficiaire —</option>
-                  {[...(isMad ? [{code:'CI',label:"Côte d'Ivoire",flag:'🇨🇮'},{code:'SN',label:'Sénégal',flag:'🇸🇳'},{code:'GW',label:'Guinée-Bissau',flag:'🇬🇼'},{code:'ML',label:'Mali',flag:'🇲🇱'},{code:'NE',label:'Niger',flag:'🇳🇪'},{code:'BF',label:'Burkina Faso',flag:'🇧🇫'}] : [{code:'MA',label:'Maroc',flag:'🇲🇦'}])].map(c => (
-                    <option key={c.code} value={c.code}>{c.flag} {c.label} (+{DIAL_CODES[c.code]?.code})</option>
+                  {benCountries.map(c => (
+                    <option key={c.code} value={c.code}>
+                      {c.flag} {c.label} (+{DIAL_CODES[c.code]?.code})
+                    </option>
                   ))}
                 </select>
-                <div className="flex items-center gap-0 border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-gold-DEFAULT transition-colors">
-                  {phoneCountryCode && DIAL_CODES[phoneCountryCode] && (
-                    <div className="bg-gray-50 border-r border-gray-200 px-3 py-2.5 text-navy font-semibold text-sm flex-shrink-0 select-none">
-                      +{DIAL_CODES[phoneCountryCode].code}
-                    </div>
-                  )}
+
+                {/* Prefix + local number */}
+                <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-yellow-400 transition-colors">
+                  <div className="flex items-center justify-center bg-gray-50 border-r border-gray-200 px-4 text-navy font-bold text-sm flex-shrink-0 min-w-[72px]">
+                    {benCountryCode && DIAL_CODES[benCountryCode]
+                      ? `+${DIAL_CODES[benCountryCode].code}`
+                      : '—'}
+                  </div>
                   <input
+                    type="tel"
                     value={form.beneficiaryPhone}
-                    onChange={e => { set('beneficiaryPhone', e.target.value); setPhoneError('') }}
-                    placeholder={phoneCountryCode ? getPlaceholder(phoneCountryCode) : "Choisissez le pays d'abord"}
-                    className="flex-1 px-4 py-2.5 text-navy outline-none bg-white text-sm"
-                    disabled={!phoneCountryCode}
+                    onChange={e => set('beneficiaryPhone', e.target.value)}
+                    placeholder={benCountryCode && DIAL_CODES[benCountryCode]
+                      ? DIAL_CODES[benCountryCode].placeholder
+                      : 'Choisissez le pays d\'abord'}
+                    disabled={!benCountryCode}
+                    className="flex-1 px-4 py-2.5 text-navy outline-none bg-white text-sm disabled:bg-gray-50 disabled:text-gray-400"
                   />
                 </div>
-                {phoneCountryCode && (
-                  <p className="text-xs text-gray-400 mt-1">Saisissez le numéro sans l'indicatif (+{DIAL_CODES[phoneCountryCode]?.code})</p>
-                )}
-                {phoneError && (
-                  <div className="flex items-center gap-1.5 mt-2 text-red-500 text-xs">
-                    <AlertCircle size={13} /> {phoneError}
-                  </div>
+                {benCountryCode && DIAL_CODES[benCountryCode] && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Sans l'indicatif — ex : {DIAL_CODES[benCountryCode].placeholder}
+                  </p>
                 )}
               </div>
 
+              {/* Sender name */}
               <label className="block text-sm font-semibold text-navy mb-2">Votre nom (expéditeur)</label>
               <input value={form.senderName} onChange={e => set('senderName', e.target.value)}
                 placeholder="Votre prénom et nom"
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy focus:border-gold-DEFAULT outline-none" />
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-navy outline-none focus:border-yellow-400" />
             </div>
           )}
 
-          {/* STEP 4 — Summary */}
+          {/* ── STEP 4 : Résumé ── */}
           {step === 4 && (
             <div>
-              <h2 className="font-display text-xl font-bold text-navy mb-2">Récapitulatif du transfert</h2>
-              <p className="text-gray-400 text-sm mb-6">Vérifiez les informations avant de confirmer.</p>
-
-              <div className="space-y-3 mb-8">
+              <h2 className="font-display text-xl font-bold text-navy mb-2">Récapitulatif</h2>
+              <p className="text-gray-400 text-sm mb-6">Vérifiez avant de confirmer.</p>
+              <div className="space-y-0 mb-8 border border-gray-100 rounded-2xl overflow-hidden">
                 {[
-                  ['Direction', `${form.originCountry?.flag} ${form.originCountry?.name} → ${form.destCountry?.flag} ${form.destCountry?.name}`],
-                  ['Envoi via', form.sendMethod?.name],
-                  ['Réception via', form.receiveMethod?.name],
-                  ['Montant envoyé', `${amt.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`],
-                  ['Frais (10%)', `${fees.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`],
-                  ['Total à payer', `${total.toLocaleString()} ${isMad ? 'MAD' : 'FCFA'}`],
-                  ['Bénéficiaire reçoit', `${received.toLocaleString()} ${isMad ? 'FCFA' : 'MAD'}`],
-                  ['Bénéficiaire', `${form.beneficiaryFirst} ${form.beneficiaryLast}`],
-                  ['Tél bénéficiaire', fullPhone],
-                ].map(([l, v]) => (
-                  <div key={l} className="flex justify-between py-2.5 border-b border-gray-100">
-                    <span className="text-sm text-gray-500">{l}</span>
-                    <span className="text-sm font-semibold text-navy text-right max-w-[60%]">{v}</span>
+                  ['Direction',          `${form.originCountry?.flag} ${form.originCountry?.name} → ${form.destCountry?.flag} ${form.destCountry?.name}`],
+                  ['Envoi via',          form.sendMethod?.name],
+                  ['Réception via',      form.receiveMethod?.name],
+                  ['Montant envoyé',     `${amt.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}`],
+                  ['Frais (10%)',        `${fees.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}`],
+                  ['Total à payer',      `${total.toLocaleString('fr-FR')} ${isMad ? 'MAD' : 'FCFA'}`],
+                  ['Bénéficiaire reçoit',`${received.toLocaleString('fr-FR')} ${isMad ? 'FCFA' : 'MAD'}`],
+                  ['Bénéficiaire',       `${form.beneficiaryFirst} ${form.beneficiaryLast}`],
+                  ['Tél bénéficiaire',   fullPhone],
+                  ['Expéditeur',         form.senderName],
+                ].map(([l, v], idx) => (
+                  <div key={l} className={`flex justify-between px-5 py-3 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                    <span className="text-sm text-gray-500 flex-shrink-0 mr-4">{l}</span>
+                    <span className="text-sm font-semibold text-navy text-right">{v}</span>
                   </div>
                 ))}
               </div>
 
               <button onClick={handleConfirm}
-                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-bold text-base transition-colors shadow-lg shadow-green-500/30">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-bold text-base transition-colors shadow-lg"
+                style={{ backgroundColor: '#25D366' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                Confirmer et contacter via WhatsApp
-                <ExternalLink size={16} />
+                Confirmer et envoyer sur WhatsApp
               </button>
             </div>
           )}
@@ -414,7 +402,8 @@ Merci de prendre en charge ma demande. 🙏`
             </button>
             {step < 4 && (
               <button onClick={() => setStep(s => s + 1)} disabled={!canNext()}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-navy text-white font-bold disabled:opacity-30 hover:bg-navy-light transition-colors shadow-lg shadow-navy/20">
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-navy text-white font-bold disabled:opacity-30 transition-colors shadow-lg"
+                style={{ backgroundColor: canNext() ? '#1B2A6B' : undefined }}>
                 Suivant <ChevronRight size={18} />
               </button>
             )}
@@ -425,7 +414,6 @@ Merci de prendre en charge ma demande. 🙏`
   )
 }
 
-/* ── Country selector ── */
 function CountrySelect({ label, options, value, onChange, disabled }) {
   return (
     <div className="mb-5">
@@ -435,15 +423,16 @@ function CountrySelect({ label, options, value, onChange, disabled }) {
           <button key={c.code} onClick={() => !disabled && onChange(c)} disabled={disabled}
             className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
               value?.code === c.code
-                ? 'border-gold-DEFAULT bg-gold-DEFAULT/5'
-                : disabled ? 'border-gray-100 bg-gray-50 cursor-default' : 'border-gray-200 hover:border-gray-300'
+                ? 'border-yellow-400 bg-yellow-50'
+                : disabled ? 'border-gray-100 bg-gray-50 cursor-default'
+                : 'border-gray-200 hover:border-gray-300'
             }`}>
             <span className="text-2xl">{c.flag}</span>
             <div>
               <div className="font-semibold text-navy text-sm">{c.name}</div>
-              <div className="text-xs text-gray-400">{c.currency} · {c.dialCode}</div>
+              <div className="text-xs text-gray-400">{c.currency}</div>
             </div>
-            {value?.code === c.code && <Check size={16} className="ml-auto text-gold-DEFAULT" />}
+            {value?.code === c.code && <Check size={16} className="ml-auto" style={{ color: '#F5A623' }} />}
           </button>
         ))}
       </div>
@@ -451,7 +440,6 @@ function CountrySelect({ label, options, value, onChange, disabled }) {
   )
 }
 
-/* ── Payment method selector ── */
 function MethodSelect({ label, options, value, onChange }) {
   return (
     <div className="mb-6">
@@ -460,9 +448,8 @@ function MethodSelect({ label, options, value, onChange }) {
         {options.map(m => (
           <button key={m.id} onClick={() => onChange(m)}
             className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${
-              value?.id === m.id ? 'border-gold-DEFAULT bg-gold-DEFAULT/5' : 'border-gray-200 hover:border-gray-300'
+              value?.id === m.id ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 hover:border-gray-300'
             }`}>
-            {/* Real logo image */}
             <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border border-gray-100 shadow-sm p-1">
               <img src={m.logo} alt={m.name} className="w-full h-full object-contain" />
             </div>
@@ -470,7 +457,7 @@ function MethodSelect({ label, options, value, onChange }) {
               <div className="font-bold text-navy">{m.name}</div>
               <div className="text-xs text-gray-400">{m.desc}</div>
             </div>
-            {value?.id === m.id && <Check size={16} className="ml-auto text-gold-DEFAULT" />}
+            {value?.id === m.id && <Check size={16} className="ml-auto" style={{ color: '#F5A623' }} />}
           </button>
         ))}
       </div>

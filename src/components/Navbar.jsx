@@ -59,8 +59,9 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3">
-                <a href="/dashboard" className={`text-sm font-medium hover:text-gold-DEFAULT transition-colors ${scrolled || !isHome ? 'text-navy' : 'text-white'}`}>
-                  {profile?.first_name || user.email}
+                <a href="/dashboard"
+                  className={`text-sm font-medium hover:underline transition-colors ${scrolled || !isHome ? 'text-navy' : 'text-white'}`}>
+                  👤 {profile?.first_name || 'Mon compte'}
                 </a>
                 <button onClick={handleSignOut}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-300 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors">
