@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, Zap, Users, Lock, TrendingUp, Smartphone, Star, ChevronRight, ArrowRight } from 'lucide-react'
-import { COUNTRIES, MOROCCO, TESTIMONIALS, ALL_PARTNERS, WHATSAPP_NUMBER } from '../lib/constants'
+import { COUNTRIES, MOROCCO, TESTIMONIALS, ALL_PARTNERS } from '../lib/constants'
 
 function Counter({ end, suffix = '', duration = 2000 }) {
   const [count, setCount] = useState(0)

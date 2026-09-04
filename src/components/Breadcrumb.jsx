@@ -9,7 +9,6 @@ const LABELS = {
   faq: "FAQ",
   social: "Réseaux sociaux",
   dashboard: "Mon historique",
-  merci: "Merci",
 }
 
 export default function Breadcrumb() {

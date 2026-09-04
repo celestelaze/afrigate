@@ -34,10 +34,6 @@ const SEO_DATA = {
     title: "Mon historique | AfriGate — Mes transferts",
     description: "Consultez l'historique complet de vos transferts AfriGate, les statuts et les détails de chaque transaction.",
   },
-  '/merci': {
-    title: "Merci | AfriGate — Demande reçue",
-    description: "Votre demande de transfert a bien été reçue. Notre équipe AfriGate la traite en priorité.",
-  },
 }
 
 export default function SEOHead() {

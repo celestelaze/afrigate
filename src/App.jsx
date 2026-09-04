@@ -12,13 +12,12 @@ import Signup from './pages/Signup'
 import Contact from './pages/Contact'
 import Social from './pages/Social'
 import FAQ from './pages/FAQ'
-import Merci from './pages/Merci'
 import NotFound from './pages/NotFound'
 
 function Layout() {
   const { pathname } = useLocation()
-  const noFooter = ['/login', '/signup', '/merci'].includes(pathname)
-  const isFullscreen = ['/login', '/signup', '/merci', '/404'].includes(pathname)
+  const noFooter = ['/login', '/signup'].includes(pathname)
+  const isFullscreen = ['/login', '/signup', '/404'].includes(pathname)
 
   return (
     <>
@@ -34,7 +33,6 @@ function Layout() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/social" element={<Social />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/merci" element={<Merci />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

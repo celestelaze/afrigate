@@ -22,7 +22,7 @@ export default function Login() {
       const redirect = new URLSearchParams(window.location.search).get('redirect') || '/transfer'
       navigate(redirect)
     } catch (err) {
-      setError('Email ou mot de passe incorrect.')
+      setError(err.message || 'Email ou mot de passe incorrect.')
     } finally {
       setLoading(false)
     }
