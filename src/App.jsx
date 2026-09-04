@@ -12,7 +12,6 @@ import Signup from './pages/Signup'
 import Contact from './pages/Contact'
 import Social from './pages/Social'
 import FAQ from './pages/FAQ'
-import Dashboard from './pages/Dashboard'
 import Merci from './pages/Merci'
 import NotFound from './pages/NotFound'
 
@@ -35,7 +34,6 @@ function Layout() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/social" element={<Social />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/merci" element={<Merci />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -59,10 +59,7 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3">
-                <a href="/dashboard"
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-2 border-navy text-navy hover:bg-navy hover:text-white transition-colors">
-                  📊 Mon historique
-                </a>
+
                 <button onClick={handleSignOut}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-300 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors">
                   <LogOut size={15} /> Déconnexion
@@ -108,21 +105,10 @@ export default function Navbar() {
             ))}
             <div className="pt-2 flex flex-col gap-2">
               {user ? (
-                <>
-                  <a href="/dashboard" onClick={() => setOpen(false)}
-                    className="w-full px-4 py-3 rounded-xl font-bold text-center text-navy border-2 border-navy block">
-                    📊 Mon historique
-                  </a>
-                  <Link to="/transfer" onClick={() => setOpen(false)}
-                    className="w-full px-4 py-3 rounded-xl font-bold text-center text-navy block"
-                    style={{ backgroundColor: '#F5A623' }}>
-                    💸 Envoyer de l'argent
-                  </Link>
-                  <button onClick={handleSignOut}
-                    className="w-full px-4 py-3 rounded-xl border border-red-300 text-red-500 font-semibold">
-                    Déconnexion
-                  </button>
-                </>
+                <button onClick={handleSignOut}
+                  className="w-full px-4 py-3 rounded-xl border border-red-300 text-red-500 font-semibold">
+                  Déconnexion
+                </button>
               ) : (
                 <>
                   <Link to="/login" onClick={() => setOpen(false)}
