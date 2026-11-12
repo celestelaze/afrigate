@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -29,13 +29,16 @@ export default function Transfer() {
   const [step, setStep] = useState(0)
   const [benCountryCode, setBenCountryCode] = useState('')
 
+  // la direction mémorisée avant l'inscription n'est utilisée qu'une seule fois
+  useEffect(() => { sessionStorage.removeItem('pending_transfer_direction') }, [])
+
   const saveAndRedirect = (direction) => {
     sessionStorage.setItem('pending_transfer_direction', direction)
     navigate('/signup?redirect=/transfer')
   }
 
   const [form, setForm] = useState({
-    direction:        '',
+    direction:        (typeof window !== 'undefined' && sessionStorage.getItem('pending_transfer_direction')) || '',
     originCountry:    null,
     destCountry:      null,
     sendMethod:       null,

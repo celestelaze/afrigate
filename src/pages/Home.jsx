@@ -141,7 +141,7 @@ export default function Home() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              {icon:Shield,title:'Sécurité maximale',desc:'Chiffrement de bout en bout. Vos données et votre argent sont protégés à chaque instant.'},
+              {icon:Shield,title:'Sécurité maximale',desc:'Connexion chiffrée (HTTPS) et données stockées de façon sécurisée. Chaque transfert est confirmé avec notre équipe.'},
               {icon:Zap,title:'Rapide et fiable',desc:"Traitement express par notre équipe dédiée. Chaque transfert est suivi en temps réel."},
               {icon:Users,title:'Support humain 24/7',desc:"Un vrai agent vous accompagne via WhatsApp à chaque étape de votre transfert."},
               {icon:Lock,title:'Données privées',desc:"Aucune donnée personnelle n'est partagée avec des tiers. Vie privée garantie."},

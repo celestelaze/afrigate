@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
 import Logo from '../components/Logo'
+import { safeRedirect } from '../lib/safeRedirect'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -19,7 +20,7 @@ export default function Login() {
     setLoading(true)
     try {
       await signIn({ email, password })
-      const redirect = new URLSearchParams(window.location.search).get('redirect') || '/transfer'
+      const redirect = safeRedirect(new URLSearchParams(window.location.search).get('redirect'))
       navigate(redirect)
     } catch (err) {
       setError(err.message || 'Email ou mot de passe incorrect.')

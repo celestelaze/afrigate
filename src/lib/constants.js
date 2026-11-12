@@ -76,7 +76,7 @@ export const SOCIAL_LINKS = {
 }
 
 export const TESTIMONIALS = [
-  { name: 'Fatima B.', country: 'Maroc', flag: '🇲🇦', stars: 5, text: "AfriGate m'a permis d'envoyer de l'argent à ma famille en Côte d'Ivoire en moins d'une heure. Je recommande les yeux fermés !", initials: 'FB' },
+  { name: 'Fatima B.', country: 'Maroc', flag: '🇲🇦', stars: 5, text: "AfriGate m'a permis d'envoyer de l'argent à ma famille en Côte d'Ivoire rapidement. Je recommande les yeux fermés !", initials: 'FB' },
   { name: 'Moussa D.', country: 'Sénégal', flag: '🇸🇳', stars: 5, text: "Le support WhatsApp est réactif et professionnel. Je me sens vraiment en sécurité à chaque transfert.", initials: 'MD' },
   { name: 'Aminata K.', country: "Côte d'Ivoire", flag: '🇨🇮', stars: 5, text: "Les frais sont clairs, pas de mauvaises surprises. C'est rare et ça mérite d'être souligné.", initials: 'AK' },
   { name: 'Youssef M.', country: 'Maroc', flag: '🇲🇦', stars: 5, text: "Enfin un service qui inspire vraiment confiance. J'utilise AfriGate chaque mois sans aucun problème.", initials: 'YM' },

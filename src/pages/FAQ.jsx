@@ -5,7 +5,7 @@ const FAQS = [
   {
     category: '💸 Transferts',
     items: [
-      { q: 'Quels pays sont couverts par AfriGate ?', a: "AfriGate couvre les transferts entre le Maroc (MAD) et 6 pays d'Afrique de l'Ouest : la Côte d'Ivoire, le Sénégal, la Guinée-Bissau, le Mali, le Niger et le Burkina Faso (FCFA)." },
+      { q: 'Quels pays sont couverts par AfriGate ?', a: "AfriGate couvre les transferts entre le Maroc (MAD) et 6 pays : la Côte d'Ivoire, le Sénégal, la Guinée-Bissau, le Mali, le Niger et le Burkina Faso (FCFA)." },
       { q: 'Quels sont les frais de service ?', a: "AfriGate applique des frais de 10% sur le montant envoyé. Ces frais sont affichés clairement et calculés automatiquement avant toute confirmation. Aucune surprise." },
       { q: 'Quel est le délai de traitement ?', a: "La plupart des transferts sont traités en 15 à 30 minutes durant les heures d'activité. Notre équipe est disponible 24h/7j via WhatsApp pour tout suivi." },
       { q: "Quel est le montant minimum et maximum d'un transfert ?", a: "Il n'y a pas de montant minimum fixe. Pour les transferts de grande valeur, contactez notre support via WhatsApp pour un traitement personnalisé." },
@@ -15,16 +15,16 @@ const FAQS = [
     category: '💳 Moyens de paiement',
     items: [
       { q: 'Quels moyens de paiement sont acceptés depuis le Maroc ?', a: "Depuis le Maroc, vous pouvez envoyer via CIH Bank (virement), Bank of Africa (virement), Cash Plus (dépôt agence) ou Wafa Cash (dépôt agence)." },
-      { q: "Quels moyens de paiement sont disponibles en Afrique de l'Ouest ?", a: "En Afrique de l'Ouest, les paiements et réceptions se font via Orange Money et Wave (Mobile Money)." },
+      { q: "Quels moyens de paiement sont disponibles en Côte d'Ivoire, au Sénégal, au Mali, au Niger, au Burkina Faso et en Guinée-Bissau ?", a: "Dans ces pays, les paiements et réceptions se font via Orange Money et Wave (Mobile Money)." },
       { q: 'Le bénéficiaire doit-il avoir un compte bancaire ?', a: "Non ! Avec Orange Money et Wave, le bénéficiaire peut recevoir directement sur son téléphone sans compte bancaire." },
     ]
   },
   {
     category: '🔒 Sécurité & Confiance',
     items: [
-      { q: 'Mes données sont-elles sécurisées ?', a: "Oui. AfriGate utilise Supabase avec chiffrement de bout en bout et sécurité de niveau bancaire. Vos données ne sont jamais partagées avec des tiers." },
-      { q: 'Comment puis-je suivre mon transfert ?', a: "Après confirmation, vous recevez une référence unique (ex: AFG-2025-XXXX). Utilisez-la pour contacter notre support WhatsApp et obtenir un suivi en temps réel." },
-      { q: 'Que faire si mon transfert tarde à arriver ?', a: "Contactez immédiatement notre support via WhatsApp (+221 77 699 75 46) avec votre référence de transaction. Nous résolvons tout problème en moins d'une heure." },
+      { q: 'Mes données sont-elles sécurisées ?', a: "Oui. Vos données sont transmises via une connexion chiffrée (HTTPS) et stockées dans une base de données sécurisée avec accès restreint à votre compte. Elles ne sont pas vendues à des tiers." },
+      { q: 'Comment puis-je suivre mon transfert ?', a: "Après confirmation, vous recevez une référence unique (ex: AFG-2026-XXXXXX). Utilisez-la pour contacter notre support WhatsApp et obtenir un suivi en temps réel." },
+      { q: 'Que faire si mon transfert tarde à arriver ?', a: "Contactez immédiatement notre support via WhatsApp (+221 77 699 75 46) avec votre référence de transaction. Nous traitons chaque demande en priorité." },
     ]
   },
   {

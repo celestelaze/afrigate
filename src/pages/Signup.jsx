@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle, CheckCircle, Loader } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
 import Logo from '../components/Logo'
+import { safeRedirect } from '../lib/safeRedirect'
 import { COUNTRIES, MOROCCO } from '../lib/constants'
 
 const ALL_COUNTRIES = [MOROCCO, ...COUNTRIES]
@@ -55,7 +56,7 @@ export default function Signup() {
   const { signUp } = useAuth()
   const navigate   = useNavigate()
   const [params]   = useSearchParams()
-  const redirectTo = params.get('redirect') || '/transfer'
+  const redirectTo = safeRedirect(params.get('redirect'))
 
   const selectedCountry = ALL_COUNTRIES.find(c => c.name === country)
   const dial = selectedCountry ? DIAL[selectedCountry.code] : null
