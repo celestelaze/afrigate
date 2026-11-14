@@ -30,48 +30,34 @@ export function AuthProvider({ children }) {
   }
 
   /**
-   * SIGNUP — Uses our custom SQL function `register_user` which:
-   *   1. Creates the user directly in auth.users WITH email_confirmed_at = NOW()
-   *   2. Creates the profile row
-   *   3. Returns {success, user_id} or {success:false, error, message}
-   * Then immediately calls signInWithPassword to get a session.
-   * This completely bypasses Supabase email confirmation.
+   * SIGNUP — tout passe par la fonction serveur "register" (Supabase Edge Function) qui :
+   *   1. contrôle le jeton "numéro vérifié" (émis uniquement après validation NumLookup côté serveur)
+   *   2. applique les limites anti-abus
+   *   3. crée le compte + le profil (nom, téléphone, pays)
+   * Puis on ouvre la session avec email + mot de passe.
    */
-  async function signUp({ email, password, firstName, lastName, phone, country }) {
-    // Step 1: Create user via our SQL function (email pre-confirmed)
-    const { data: rpcData, error: rpcError } = await supabase.rpc('register_user', {
-      p_email:      email.trim().toLowerCase(),
-      p_password:   password,
-      p_first_name: firstName || '',
-      p_last_name:  lastName  || '',
-      p_phone:      phone     || '',
-      p_country:    country   || '',
+  async function signUp({ email, password, firstName, lastName, countryCode, localNumber, phoneToken }) {
+    const { data, error } = await supabase.functions.invoke('register', {
+      body: { action: 'register', email, password, firstName, lastName, countryCode, localNumber, phoneToken },
     })
+    if (error) throw new Error('Connexion au serveur impossible. Réessayez dans un instant.')
+    if (!data?.ok) throw new Error(data?.message || 'Inscription impossible.')
 
-    if (rpcError) {
-      throw new Error('Erreur de connexion au serveur. Réessayez.')
-    }
-
-    if (!rpcData?.success) {
-      const msg = rpcData?.message || 'Inscription impossible.'
-      if (rpcData?.error === 'email_exists') {
-        throw new Error('Cet email est déjà utilisé. Connectez-vous plutôt.')
-      }
-      throw new Error(msg)
-    }
-
-    // Step 2: Sign in immediately (email is already confirmed in DB)
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email:    email.trim().toLowerCase(),
+      email: email.trim().toLowerCase(),
       password,
     })
-
-    if (signInError || !signInData?.session) {
-      // Account created but session failed — tell user to login
-      return { success: true, session: null, needsLogin: true }
-    }
-
+    if (signInError || !signInData?.session) return { success: true, session: null, needsLogin: true }
     return { success: true, session: signInData.session, needsLogin: false }
+  }
+
+  /** Vérifie le numéro via la fonction serveur. Renvoie { ok, formatted, token } ou { ok:false, message }. */
+  async function verifyPhone({ countryCode, localNumber }) {
+    const { data, error } = await supabase.functions.invoke('register', {
+      body: { action: 'verify', countryCode, localNumber },
+    })
+    if (error) return { ok: false, message: 'Connexion au serveur impossible. Réessayez dans un instant.' }
+    return data || { ok: false, message: 'Réponse invalide.' }
   }
 
   /**
@@ -109,7 +95,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signUp, verifyPhone, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

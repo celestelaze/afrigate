@@ -8,8 +8,7 @@ import { COUNTRIES, MOROCCO } from '../lib/constants'
 
 const ALL_COUNTRIES = [MOROCCO, ...COUNTRIES]
 
-const NUMLOOKUP_KEY = 'num_live_8KItMVicYhtNF4PSG3ySADadCl46YEExbzdxturC'
-
+// Indicatif + exemple affichés à l'écran (la vraie validation est faite côté serveur)
 const DIAL = {
   MA: { code: '212', placeholder: '6 12 34 56 78' },
   CI: { code: '225', placeholder: '07 00 00 00 00' },
@@ -18,23 +17,6 @@ const DIAL = {
   ML: { code: '223', placeholder: '70 00 00 00' },
   NE: { code: '227', placeholder: '90 00 00 00' },
   BF: { code: '226', placeholder: '70 00 00 00' },
-}
-
-async function verifyPhoneNumLookup(dialCode, localNumber) {
-  const local = localNumber.replace(/\D/g, '') // digits only
-  const full  = `${dialCode}${local}`
-  try {
-    const res = await fetch(
-      `https://api.numlookupapi.com/v1/validate/${full}`,
-      { headers: { apikey: NUMLOOKUP_KEY }, signal: AbortSignal.timeout(6000) }
-    )
-    if (!res.ok) return { valid: true, formatted: `+${full}` }
-    const data = await res.json()
-    return { valid: data.valid !== false, formatted: data.international_format || `+${full}` }
-  } catch {
-    // Network issue or timeout → don't block user
-    return { valid: true, formatted: `+${full}` }
-  }
 }
 
 export default function Signup() {
@@ -50,10 +32,11 @@ export default function Signup() {
   const [loading,    setLoading]    = useState(false)
   const [phoneState, setPhoneState] = useState('idle') // idle|verifying|valid|invalid
   const [fullPhone,  setFullPhone]  = useState('')
+  const [phoneToken, setPhoneToken] = useState('')
   const [done,       setDone]       = useState(false)
   const [needsLogin, setNeedsLogin] = useState(false)
 
-  const { signUp } = useAuth()
+  const { signUp, verifyPhone } = useAuth()
   const navigate   = useNavigate()
   const [params]   = useSearchParams()
   const redirectTo = safeRedirect(params.get('redirect'))
@@ -66,6 +49,7 @@ export default function Signup() {
     setLocalPhone('')
     setPhoneState('idle')
     setFullPhone('')
+    setPhoneToken('')
     setError('')
   }
 
@@ -74,13 +58,15 @@ export default function Signup() {
     if (!localPhone.trim()) { setError('Saisissez votre numéro.'); return }
     setPhoneState('verifying')
     setError('')
-    const result = await verifyPhoneNumLookup(dial.code, localPhone)
-    if (result.valid) {
+    const result = await verifyPhone({ countryCode: selectedCountry.code, localNumber: localPhone })
+    if (result.ok) {
       setFullPhone(result.formatted)
+      setPhoneToken(result.token)
       setPhoneState('valid')
     } else {
+      setPhoneToken('')
       setPhoneState('invalid')
-      setError(`Numéro invalide. Format attendu sans indicatif — ex : ${dial.placeholder}`)
+      setError(result.message || 'Numéro invalide.')
     }
   }
 
@@ -89,11 +75,14 @@ export default function Signup() {
     setError('')
     if (phoneState !== 'valid') { setError('Vérifiez votre numéro de téléphone.'); return }
     if (password !== confirm)   { setError('Les mots de passe ne correspondent pas.'); return }
-    if (password.length < 6)   { setError('Mot de passe trop court (6 caractères minimum).'); return }
+    if (password.length < 8)   { setError('Mot de passe trop court (8 caractères minimum).'); return }
 
     setLoading(true)
     try {
-      const result = await signUp({ email, password, firstName, lastName, phone: fullPhone, country })
+      const result = await signUp({
+        email, password, firstName, lastName,
+        countryCode: selectedCountry.code, localNumber: localPhone, phoneToken,
+      })
       if (result.needsLogin) {
         setNeedsLogin(true)
       } else {
@@ -193,7 +182,7 @@ export default function Signup() {
                   {dial ? `+${dial.code}` : '—'}
                 </div>
                 <input type="tel" value={localPhone}
-                  onChange={e => { setLocalPhone(e.target.value); setPhoneState('idle'); setError('') }}
+                  onChange={e => { setLocalPhone(e.target.value); setPhoneState('idle'); setPhoneToken(''); setError('') }}
                   placeholder={dial ? dial.placeholder : "Choisissez un pays"}
                   disabled={!dial}
                   className={`flex-1 border-2 rounded-xl px-3 py-2.5 text-navy text-sm outline-none transition-colors disabled:bg-gray-100 ${
@@ -223,7 +212,7 @@ export default function Signup() {
               <div className="relative">
                 <input type={showPwd ? 'text' : 'password'} value={password}
                   onChange={e => setPassword(e.target.value)} required
-                  placeholder="6 caractères minimum"
+                  placeholder="8 caractères minimum"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 pr-11 text-navy text-sm outline-none focus:border-yellow-400" />
                 <button type="button" onClick={() => setShowPwd(s => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">

@@ -3,7 +3,6 @@ import { AuthProvider } from './components/AuthContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Breadcrumb from './components/Breadcrumb'
-import CookieBanner from './components/CookieBanner'
 import SEOHead from './components/SEOHead'
 import Home from './pages/Home'
 import Transfer from './pages/Transfer'
@@ -37,7 +36,6 @@ function Layout() {
         </Routes>
       </main>
       {!noFooter && <Footer />}
-      <CookieBanner />
     </>
   )
 }
