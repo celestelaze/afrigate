@@ -9,7 +9,11 @@ export default function Contact() {
 
   function handleSubmit(e) {
     e.preventDefault()
-    // In production, connect to a backend or email service
+    // Pas de serveur de messagerie : on ouvre l'application email de l'utilisateur avec le message prêt à envoyer.
+    const clean = (v, max) => String(v).replace(/[\r\n]+/g, ' ').slice(0, max)
+    const subject = clean(form.subject, 120)
+    const body = `${String(form.message).slice(0, 3000)}\n\n— ${clean(form.name, 80)} (${clean(form.email, 120)})`
+    window.location.href = `mailto:afrigate@zohomail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     setSent(true)
   }
 
@@ -28,8 +32,8 @@ export default function Contact() {
             {sent ? (
               <div className="text-center py-12">
                 <CheckCircle size={56} className="text-green-500 mx-auto mb-4" />
-                <h3 className="font-display text-xl font-bold text-navy mb-2">Message envoyé !</h3>
-                <p className="text-gray-400">Nous vous répondrons dans les meilleurs délais.</p>
+                <h3 className="font-display text-xl font-bold text-navy mb-2">Votre message est prêt !</h3>
+                <p className="text-gray-400">Votre application email s'est ouverte : appuyez sur « Envoyer » pour nous le transmettre. Vous pouvez aussi nous écrire sur WhatsApp.</p>
               </div>
             ) : (
               <>
