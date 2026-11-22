@@ -18,6 +18,14 @@ const SEO_DATA = {
     title: "Créer un compte | AfriGate — Inscription gratuite",
     description: "Créez votre compte AfriGate gratuitement. Accédez à votre historique de transactions et simplifiez vos transferts d'argent vers l'Afrique.",
   },
+  '/forgot-password': {
+    title: "Mot de passe oublié | AfriGate",
+    description: "Recevez un lien pour choisir un nouveau mot de passe AfriGate.",
+  },
+  '/reset-password': {
+    title: "Nouveau mot de passe | AfriGate",
+    description: "Choisissez un nouveau mot de passe pour votre compte AfriGate.",
+  },
   '/contact': {
     title: "Contact | AfriGate — Support 24h/7j par WhatsApp",
     description: "Contactez l'équipe AfriGate via WhatsApp, email ou formulaire. Support disponible 7j/7, 24h/24 pour vos transferts d'argent.",

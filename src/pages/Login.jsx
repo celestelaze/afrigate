@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
 import Logo from '../components/Logo'
 import { safeRedirect } from '../lib/safeRedirect'
+import { PASSWORD_RESET_ENABLED } from '../lib/constants'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -13,6 +14,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
   const navigate = useNavigate()
+  const { search } = useLocation()
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -63,6 +65,11 @@ export default function Login() {
                   {show ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {PASSWORD_RESET_ENABLED && (
+                <div className="text-right mt-2">
+                  <Link to="/forgot-password" className="text-sm font-semibold text-navy hover:underline">Mot de passe oublié ?</Link>
+                </div>
+              )}
             </div>
             <button type="submit" disabled={loading}
               className="w-full py-3.5 rounded-xl bg-navy text-white font-bold hover:bg-navy-light transition-colors shadow-lg shadow-navy/20 disabled:opacity-60 mt-2">
@@ -72,7 +79,7 @@ export default function Login() {
 
           <p className="text-center text-sm text-gray-400 mt-6">
             Pas encore de compte ?{' '}
-            <Link to="/signup" className="text-gold-DEFAULT font-semibold hover:underline">S'inscrire</Link>
+            <Link to={`/signup${search}`} className="text-gold-DEFAULT font-semibold hover:underline">S'inscrire</Link>
           </p>
         </div>
       </div>

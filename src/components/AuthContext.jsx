@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [recovery, setRecovery] = useState(false) // true : l'utilisateur arrive depuis un lien de réinitialisation
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -14,7 +15,8 @@ export function AuthProvider({ children }) {
       if (session?.user) fetchProfile(session.user.id)
       setLoading(false)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
       else setProfile(null)
@@ -95,7 +97,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, verifyPhone, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, recovery, signUp, verifyPhone, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, AlertCircle, CheckCircle, Loader } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
 import Logo from '../components/Logo'
@@ -39,6 +39,7 @@ export default function Signup() {
   const { signUp, verifyPhone } = useAuth()
   const navigate   = useNavigate()
   const [params]   = useSearchParams()
+  const { search } = useLocation()
   const redirectTo = safeRedirect(params.get('redirect'))
 
   const selectedCountry = ALL_COUNTRIES.find(c => c.name === country)
@@ -114,7 +115,7 @@ export default function Signup() {
         <p className="text-gray-500 text-sm mb-6">
           Connectez-vous avec votre email et mot de passe.
         </p>
-        <Link to="/login"
+        <Link to={`/login${search}`}
           className="block w-full py-3.5 rounded-xl font-bold text-center text-navy"
           style={{ backgroundColor: '#F5A623' }}>
           Se connecter
@@ -244,7 +245,7 @@ export default function Signup() {
 
           <p className="text-center text-sm text-gray-400 mt-5">
             Déjà un compte ?{' '}
-            <Link to="/login" className="font-semibold hover:underline" style={{ color: '#F5A623' }}>
+            <Link to={`/login${search}`} className="font-semibold hover:underline" style={{ color: '#F5A623' }}>
               Se connecter
             </Link>
           </p>

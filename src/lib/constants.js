@@ -92,3 +92,6 @@ export const ALL_PARTNERS = [
   { name: 'Cash Plus',   logo: '/logos/cashplus.webp',    bg: 'white' },
   { name: 'Wafa Cash',   logo: '/logos/wafacash.png',     bg: 'white' },
 ]
+
+// "Mot de passe oublié" : activé uniquement quand l'envoi d'emails est configuré (variable Vercel VITE_PASSWORD_RESET=true)
+export const PASSWORD_RESET_ENABLED = import.meta.env.VITE_PASSWORD_RESET === 'true'
